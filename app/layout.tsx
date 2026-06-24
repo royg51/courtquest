@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { Toaster } from 'sonner';
+import { AuthSessionProvider } from '@/components/providers/SessionProvider';
+import Navbar from '@/components/layout/Navbar';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -12,8 +14,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
-        {/* TanStack Query provider and Auth.js SessionProvider will wrap children here */}
-        {children}
+        <AuthSessionProvider>
+          {/* TanStack Query provider will wrap children here */}
+          <Navbar />
+          {children}
+        </AuthSessionProvider>
         <Toaster richColors position="top-right" />
       </body>
     </html>
