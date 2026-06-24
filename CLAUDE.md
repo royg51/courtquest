@@ -30,9 +30,16 @@ Project-specific guidance for working in `courtquest/`. See the root [`/Users/ro
 
 ## Git workflow
 
-- Use feature branches (e.g. `dev/auth-ui`, `dev/middleware`).
+- Use feature branches (e.g. `dev/auth-ui`, `dev/middleware`); never commit directly to `main`.
 - Conventional Commits format: `feat:`, `fix:`, `chore:`, `refactor:`.
   - Example: `feat(auth): add login page UI scaffold`
   - Example: `fix(auth): correct middleware redirect logic`
 - Stage only the files relevant to the change — never broad `git add -A`.
 - Never commit a build that doesn't pass `npm run build` / `npm run lint`.
+
+## Git automation rules
+
+- Never merge `main` into feature branches unless explicitly asked.
+- Prefer rebase over merge for syncing a feature branch with `main`.
+- Always end work with a PR via `gh pr create`.
+- Never resolve merge conflicts automatically without asking.
