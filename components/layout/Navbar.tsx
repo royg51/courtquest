@@ -1,8 +1,59 @@
 // Top navigation bar.
-// Shows: Logo, nav links, UserMenu (avatar dropdown if signed in, Login button if not).
-// Mobile: collapses to hamburger menu.
-// Implemented in Step 3 (UI shell).
+// Auth-aware: shows Dashboard + Logout when signed in, Login + Sign Up otherwise.
+
+'use client';
+
+import Link from 'next/link';
+import { useSession, signOut } from 'next-auth/react';
 
 export default function Navbar() {
-  return <nav>Navbar — not yet implemented</nav>;
+  const { status } = useSession();
+
+  return (
+    <header className="border-b border-gray-200 bg-white">
+      <nav className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
+        <Link href="/" className="text-lg font-bold text-brand-700">
+          CourtQuest
+        </Link>
+
+        <div className="flex items-center gap-4 text-sm font-medium text-gray-700">
+          <Link href="/tournaments" className="hover:text-brand-700">
+            Tournaments
+          </Link>
+          <Link href="/organizer" className="hover:text-brand-700">
+            Organizer
+          </Link>
+
+          {status === 'authenticated' && (
+            <>
+              <Link href="/dashboard" className="hover:text-brand-700">
+                Dashboard
+              </Link>
+              <button
+                type="button"
+                onClick={() => signOut({ callbackUrl: '/' })}
+                className="rounded-md border border-gray-300 px-3 py-1.5 hover:bg-gray-100"
+              >
+                Logout
+              </button>
+            </>
+          )}
+
+          {status === 'unauthenticated' && (
+            <>
+              <Link href="/login" className="hover:text-brand-700">
+                Login
+              </Link>
+              <Link
+                href="/signup"
+                className="rounded-md bg-brand-600 px-3 py-1.5 text-white hover:bg-brand-700"
+              >
+                Sign Up
+              </Link>
+            </>
+          )}
+        </div>
+      </nav>
+    </header>
+  );
 }
