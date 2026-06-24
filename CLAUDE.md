@@ -15,6 +15,7 @@ Project-specific guidance for working in `courtquest/`. See the root [`/Users/ro
 - No `any` types.
 - Prisma queries must be safe and properly typed — no unchecked raw queries.
 - Auth/session logic must stay minimal and correct; don't duplicate auth logic across files — route through `lib/auth.ts`.
+- SQLite `DATABASE_URL` must be `file:./dev.db`, NOT `file:./prisma/dev.db`. Prisma resolves relative SQLite paths relative to `prisma/schema.prisma`, so a `prisma/` prefix silently resolves to a nested `prisma/prisma/dev.db` instead of the real database.
 
 ## Auth rules
 
