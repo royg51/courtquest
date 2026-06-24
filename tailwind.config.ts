@@ -9,12 +9,13 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // CourtQuest brand palette — update as design evolves
+        // CourtQuest brand palette — coral/red, matching courtquest.net
+        // (500 is the exact sampled accent color from the live site)
         brand: {
-          50:  '#f0fdf4',
-          500: '#22c55e',
-          600: '#16a34a',
-          700: '#15803d',
+          50:  '#fef2f2',
+          500: '#f87171',
+          600: '#ef4444',
+          700: '#b91c1c',
         },
       },
       borderRadius: {

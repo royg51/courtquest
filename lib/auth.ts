@@ -8,6 +8,9 @@ import type { Role } from '@/types';
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(db),
+  pages: {
+    signIn: '/login',
+  },
   providers: [
     Google,
     Credentials({

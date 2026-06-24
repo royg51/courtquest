@@ -20,6 +20,13 @@ export const metadata: Metadata = {
     'CourtQuest',
   ],
   metadataBase: new URL(APP_URL),
+  alternates: {
+    canonical: '/',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
   openGraph: {
     title: TITLE,
     description: DESCRIPTION,
