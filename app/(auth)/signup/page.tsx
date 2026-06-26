@@ -1,7 +1,16 @@
-// Signup page.
+// Signup page. Form lives in components/auth/SignupForm.tsx (client component).
 // Creates a new PLAYER account. Organizer role granted by admin after signup.
-// Implemented in Step 2 (Authentication).
+
+import { Suspense } from 'react';
+import type { Metadata } from 'next';
+import SignupForm from '@/components/auth/SignupForm';
+
+export const metadata: Metadata = { title: 'Sign Up' };
 
 export default function SignupPage() {
-  return <div>Sign up — not yet implemented</div>;
+  return (
+    <Suspense>
+      <SignupForm />
+    </Suspense>
+  );
 }
