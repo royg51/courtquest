@@ -4,6 +4,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useSession, signOut } from 'next-auth/react';
 
 export default function Navbar() {
@@ -12,15 +13,16 @@ export default function Navbar() {
   return (
     <header className="border-b border-gray-200 bg-white">
       <nav className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-        <Link href="/" className="text-lg font-bold text-brand-700">
+        <Link href="/" className="flex items-center gap-2 text-lg font-bold text-brand-700">
+          <Image src="/logo.png" alt="" width={28} height={28} className="rounded-full" />
           CourtQuest
         </Link>
 
-        <div className="flex items-center gap-4 text-sm font-medium text-gray-700">
-          <Link href="/tournaments" className="hover:text-brand-700">
+        <div className="flex items-center gap-3 text-sm font-medium text-gray-700 sm:gap-4">
+          <Link href="/tournaments" className="hidden hover:text-brand-700 sm:inline">
             Tournaments
           </Link>
-          <Link href="/organizer" className="hover:text-brand-700">
+          <Link href="/organizer" className="hidden hover:text-brand-700 sm:inline">
             Organizer
           </Link>
 
