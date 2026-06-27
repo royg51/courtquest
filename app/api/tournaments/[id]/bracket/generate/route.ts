@@ -4,15 +4,33 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { auth, requireRole } from '@/lib/auth';
+import { getTournamentById } from '@/lib/tournaments';
+import { generateSingleEliminationBracket, BracketError } from '@/lib/bracket';
 
-export async function POST(
-  _request: NextRequest,
-  _ctx: { params: { id: string } }
-) {
+export async function POST(_request: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth();
   if (!requireRole(session, 'ORGANIZER')) {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
-  // TODO: verify organizer owns this tournament, then call generateSingleEliminationBracket() from @/lib/bracket
-  return NextResponse.json({ message: 'Not implemented' }, { status: 501 });
+
+  const tournament = await getTournamentById(params.id);
+  if (!tournament) {
+    return NextResponse.json({ error: 'Not found', code: 'NOT_FOUND' }, { status: 404 });
+  }
+
+  const isOwner = tournament.organizerId === session?.user?.id;
+  if (!isOwner && !requireRole(session, 'ADMIN')) {
+    return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
+  }
+
+  try {
+    const bracket = await generateSingleEliminationBracket(params.id);
+    return NextResponse.json({ bracket }, { status: 201 });
+  } catch (error) {
+    if (error instanceof BracketError) {
+      const status = error.code === 'NOT_FOUND' ? 404 : 409;
+      return NextResponse.json({ error: error.message, code: error.code }, { status });
+    }
+    throw error;
+  }
 }
