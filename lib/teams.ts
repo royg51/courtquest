@@ -4,9 +4,18 @@
 
 import { db } from '@/lib/db';
 
-export async function getTeamsForTournament(tournamentId: string) {
+export async function getTeamsForTournament(
+  tournamentId: string,
+  filters?: { status?: string | string[] }
+) {
+  const statusFilter = Array.isArray(filters?.status)
+    ? { status: { in: filters.status } }
+    : filters?.status
+      ? { status: filters.status }
+      : {};
+
   return db.team.findMany({
-    where: { tournamentId },
+    where: { tournamentId, ...statusFilter },
     include: {
       members: {
         include: { user: { select: { id: true, name: true, email: true } } },

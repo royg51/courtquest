@@ -4,6 +4,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getTournamentBySlug } from '@/lib/tournaments';
+import { getTeamsForTournament } from '@/lib/teams';
+import PublicBracketView from '@/components/bracket/PublicBracketView';
 
 export async function generateMetadata({
   params,
@@ -36,6 +38,10 @@ export default async function TournamentDetailPage({
   if (!tournament) {
     notFound();
   }
+
+  const teams = await getTeamsForTournament(tournament.id);
+  const confirmedTeams = teams.filter((team) => team.status === 'CONFIRMED');
+  const waitlistedCount = teams.filter((team) => team.status === 'WAITLISTED').length;
 
   const eventJsonLd = {
     '@context': 'https://schema.org',
@@ -92,24 +98,47 @@ export default async function TournamentDetailPage({
         )}
       </dl>
 
-      <div className="mt-6 flex flex-wrap gap-3">
-        {tournament.status === 'OPEN' && (
+      {tournament.status === 'OPEN' && (
+        <div className="mt-6">
           <Link
             href={`/tournaments/${tournament.slug}/register`}
             className="rounded-md bg-brand-600 px-5 py-2.5 font-medium text-white transition-colors hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
           >
             Register
           </Link>
+        </div>
+      )}
+
+      <div className="mt-10">
+        <h2 className="mb-3 text-lg font-semibold text-gray-900">Participants</h2>
+        {confirmedTeams.length === 0 ? (
+          <p className="text-sm text-gray-500">No confirmed participants yet.</p>
+        ) : (
+          <ul className="grid gap-2 sm:grid-cols-2">
+            {confirmedTeams.map((team) => (
+              <li
+                key={team.id}
+                className="rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-900"
+              >
+                {team.name}
+              </li>
+            ))}
+          </ul>
         )}
-        {tournament.bracket && (
-          <Link
-            href={`/tournaments/${tournament.slug}/bracket`}
-            className="rounded-md border border-brand-600 px-5 py-2.5 font-medium text-brand-700 transition-colors hover:bg-brand-50 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
-          >
-            View Bracket
-          </Link>
+        {waitlistedCount > 0 && (
+          <p className="mt-2 text-sm text-gray-500">{waitlistedCount} team(s) waitlisted</p>
         )}
       </div>
+
+      {tournament.bracket && (
+        <div className="mt-10">
+          <h2 className="mb-3 text-lg font-semibold text-gray-900">Bracket &amp; Results</h2>
+          <PublicBracketView
+            tournamentId={tournament.id}
+            isLive={tournament.status === 'IN_PROGRESS'}
+          />
+        </div>
+      )}
     </main>
   );
 }
