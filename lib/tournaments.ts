@@ -10,14 +10,20 @@ import { cache } from 'react';
 import { db } from '@/lib/db';
 
 export async function listTournaments(filters?: {
-  status?: string;
+  status?: string | string[];
   sport?: string;
   isPublic?: boolean;
   organizerId?: string;
 }) {
+  const statusFilter = Array.isArray(filters?.status)
+    ? { status: { in: filters.status } }
+    : filters?.status
+      ? { status: filters.status }
+      : {};
+
   return db.tournament.findMany({
     where: {
-      ...(filters?.status ? { status: filters.status } : {}),
+      ...statusFilter,
       ...(filters?.sport ? { sport: filters.sport } : {}),
       ...(filters?.isPublic !== undefined ? { isPublic: filters.isPublic } : {}),
       ...(filters?.organizerId ? { organizerId: filters.organizerId } : {}),
