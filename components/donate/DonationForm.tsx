@@ -40,7 +40,7 @@ export default function DonationForm() {
   };
 
   return (
-    <div className="rounded-lg border border-gray-200 p-6">
+    <div className="rounded-lg border border-gray-200 p-6 dark:border-gray-800">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {SUGGESTED_AMOUNTS.map((amount) => (
           <button
@@ -52,8 +52,8 @@ export default function DonationForm() {
             }}
             className={`rounded-md border px-4 py-3 text-center font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500/40 ${
               selected === amount && !customAmount
-                ? 'border-brand-600 bg-brand-50 text-brand-700'
-                : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                ? 'border-brand-600 bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-400'
+                : 'border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800'
             }`}
           >
             ${amount}
@@ -62,11 +62,11 @@ export default function DonationForm() {
       </div>
 
       <div className="mt-4">
-        <label htmlFor="customAmount" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="customAmount" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
           Or enter a custom amount
         </label>
         <div className="relative mt-1">
-          <span className="absolute inset-y-0 left-3 flex items-center text-gray-400">$</span>
+          <span className="absolute inset-y-0 left-3 flex items-center text-gray-400 dark:text-gray-500">$</span>
           <input
             id="customAmount"
             type="number"
@@ -78,7 +78,7 @@ export default function DonationForm() {
               setSelected(null);
             }}
             placeholder="Custom amount"
-            className="w-full rounded-md border border-gray-300 py-2 pl-7 pr-3 text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+            className="w-full rounded-md border border-gray-300 bg-white py-2 pl-7 pr-3 text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/40 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
           />
         </div>
       </div>
@@ -92,7 +92,7 @@ export default function DonationForm() {
         {submitting ? 'Redirecting…' : `Donate${amountDollars ? ` $${amountDollars}` : ''}`}
       </button>
 
-      <p className="mt-3 text-center text-xs text-gray-400">
+      <p className="mt-3 text-center text-xs text-gray-400 dark:text-gray-500">
         Securely processed by Stripe. You&apos;ll be redirected to complete payment.
       </p>
     </div>

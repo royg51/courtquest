@@ -42,12 +42,15 @@ export default function LoginForm() {
   return (
     <div className="space-y-6">
       <div className="space-y-1 text-center">
-        <h1 className="text-xl font-bold text-gray-900">Welcome back</h1>
-        <p className="text-sm text-gray-500">Log in to manage your tournaments</p>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Welcome back</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Log in to manage your tournaments</p>
       </div>
 
       {formError && (
-        <div className="flex items-start gap-2 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
+        <div
+          className="flex items-start gap-2 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-400"
+          role="alert"
+        >
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           <span>{formError}</span>
         </div>
@@ -73,7 +76,7 @@ export default function LoginForm() {
           <button
             type="button"
             onClick={() => toast.info('Password reset is coming soon.')}
-            className="text-sm text-brand-700 hover:underline"
+            className="text-sm text-brand-700 hover:underline dark:text-brand-400"
           >
             Forgot password?
           </button>
@@ -89,16 +92,16 @@ export default function LoginForm() {
       </form>
 
       <div className="flex items-center gap-3">
-        <div className="h-px flex-1 bg-gray-200" />
-        <span className="text-xs text-gray-400">OR</span>
-        <div className="h-px flex-1 bg-gray-200" />
+        <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
+        <span className="text-xs text-gray-400 dark:text-gray-500">OR</span>
+        <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
       </div>
 
       <GoogleButton callbackUrl={callbackUrl} />
 
-      <p className="text-center text-sm text-gray-500">
+      <p className="text-center text-sm text-gray-500 dark:text-gray-400">
         Don&apos;t have an account?{' '}
-        <Link href="/signup" className="font-medium text-brand-700 hover:underline">
+        <Link href="/signup" className="font-medium text-brand-700 hover:underline dark:text-brand-400">
           Sign up
         </Link>
       </p>
