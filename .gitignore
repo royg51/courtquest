@@ -25,3 +25,4 @@ prisma/dev.db-journal
 playwright-report/
 test-results/
 coverage/
+tsconfig.tsbuildinfo

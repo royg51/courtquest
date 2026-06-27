@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Toaster } from 'sonner';
 import { AuthSessionProvider } from '@/components/providers/SessionProvider';
 import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 import './globals.css';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
@@ -33,24 +34,59 @@ export const metadata: Metadata = {
     url: APP_URL,
     siteName: 'CourtQuest',
     type: 'website',
+    images: [{ url: '/logo.png', width: 500, height: 500, alt: 'CourtQuest' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: TITLE,
     description: DESCRIPTION,
+    images: ['/logo.png'],
   },
+};
+
+// Organization + WebSite structured data — sitewide, since they describe
+// the site itself rather than any one page. Per-page structured data
+// (e.g. SportsEvent on tournament detail pages) lives on those pages.
+const organizationJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'CourtQuest',
+  url: APP_URL,
+  logo: `${APP_URL}/logo.png`,
+  sameAs: [
+    'https://www.instagram.com/court_quest/',
+    'https://www.facebook.com/profile.php?id=61578623644938',
+  ],
+};
+
+const websiteJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'CourtQuest',
+  url: APP_URL,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+        />
         <AuthSessionProvider>
           {/* TanStack Query provider will wrap children here */}
-          <Navbar />
-          {children}
+          <div className="flex min-h-screen flex-col">
+            <Navbar />
+            <div className="flex-1">{children}</div>
+            <Footer />
+          </div>
         </AuthSessionProvider>
-        <Toaster richColors position="top-right" />
+        <Toaster richColors position="bottom-right" />
       </body>
     </html>
   );

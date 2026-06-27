@@ -6,6 +6,7 @@
 //   Step 3 — listTournaments, getTournament
 //   Step 4 — createTournament, updateTournament, deleteTournament
 
+import { cache } from 'react';
 import { db } from '@/lib/db';
 
 export async function listTournaments(filters?: {
@@ -24,7 +25,9 @@ export async function listTournaments(filters?: {
   });
 }
 
-export async function getTournamentBySlug(slug: string) {
+// Wrapped in React's cache() since both generateMetadata and the page
+// component call this for the same request — dedupes the DB query.
+export const getTournamentBySlug = cache(async (slug: string) => {
   return db.tournament.findUnique({
     where: { slug },
     include: {
@@ -32,7 +35,7 @@ export async function getTournamentBySlug(slug: string) {
       _count: { select: { teams: true } },
     },
   });
-}
+});
 
 export async function getTournamentById(_id: string) {
   // TODO: implement
