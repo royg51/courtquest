@@ -9,6 +9,15 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useSession, signOut } from 'next-auth/react';
 import { Menu, X } from 'lucide-react';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
+
+const NAV_LINKS = [
+  { href: '/tournaments', label: 'Tournaments' },
+  { href: '/events', label: 'Events' },
+  { href: '/about', label: 'About' },
+  { href: '/donate', label: 'Donate' },
+  { href: '/organizer', label: 'Organizer' },
+];
 
 export default function Navbar() {
   const { status } = useSession();
@@ -54,24 +63,25 @@ export default function Navbar() {
     };
   }, [isOpen]);
 
-  const linkClass = 'transition-colors hover:text-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500/40 rounded';
-  const drawerLinkClass = 'rounded-md px-3 py-2 text-left transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500/40';
+  const linkClass =
+    'transition-colors hover:text-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500/40 rounded dark:hover:text-brand-400';
+  const drawerLinkClass =
+    'rounded-md px-3 py-2 text-left transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500/40 dark:hover:bg-gray-800';
 
   return (
-    <header className="border-b border-gray-200 bg-white">
+    <header className="border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950">
       <nav className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-        <Link href="/" className="flex items-center gap-2 text-lg font-bold text-brand-700">
+        <Link href="/" className="flex items-center gap-2 text-lg font-bold text-brand-700 dark:text-brand-400">
           <Image src="/logo.png" alt="" width={28} height={28} className="rounded-full" />
           CourtQuest
         </Link>
 
-        <div className="hidden items-center gap-4 text-sm font-medium text-gray-700 sm:flex">
-          <Link href="/tournaments" className={linkClass}>
-            Tournaments
-          </Link>
-          <Link href="/organizer" className={linkClass}>
-            Organizer
-          </Link>
+        <div className="hidden items-center gap-4 text-sm font-medium text-gray-700 sm:flex dark:text-gray-300">
+          {NAV_LINKS.map((link) => (
+            <Link key={link.href} href={link.href} className={linkClass}>
+              {link.label}
+            </Link>
+          ))}
 
           {status === 'authenticated' && (
             <>
@@ -81,7 +91,7 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={() => signOut({ callbackUrl: '/' })}
-                className="rounded-md border border-gray-300 px-3 py-1.5 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+                className="rounded-md border border-gray-300 px-3 py-1.5 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500/40 dark:border-gray-700 dark:hover:bg-gray-800"
               >
                 Logout
               </button>
@@ -101,18 +111,23 @@ export default function Navbar() {
               </Link>
             </>
           )}
+
+          <ThemeToggle />
         </div>
 
-        <button
-          type="button"
-          onClick={() => setIsOpen(true)}
-          aria-label="Open menu"
-          aria-expanded={isOpen}
-          aria-controls="mobile-nav-drawer"
-          className="rounded-md p-2 text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500/40 sm:hidden"
-        >
-          <Menu className="h-6 w-6" />
-        </button>
+        <div className="flex items-center gap-1 sm:hidden">
+          <ThemeToggle />
+          <button
+            type="button"
+            onClick={() => setIsOpen(true)}
+            aria-label="Open menu"
+            aria-expanded={isOpen}
+            aria-controls="mobile-nav-drawer"
+            className="rounded-md p-2 text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500/40 dark:text-gray-300 dark:hover:bg-gray-800"
+          >
+            <Menu className="h-6 w-6" />
+          </button>
+        </div>
       </nav>
 
       <div
@@ -129,29 +144,28 @@ export default function Navbar() {
         role="dialog"
         aria-modal="true"
         aria-label="Mobile navigation"
-        className={`fixed inset-y-0 right-0 z-50 w-72 max-w-[85vw] bg-white shadow-xl transition-transform duration-300 sm:hidden ${
+        className={`fixed inset-y-0 right-0 z-50 w-72 max-w-[85vw] bg-white shadow-xl transition-transform duration-300 sm:hidden dark:bg-gray-950 ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
-          <span className="font-semibold text-gray-900">Menu</span>
+        <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-gray-800">
+          <span className="font-semibold text-gray-900 dark:text-gray-100">Menu</span>
           <button
             type="button"
             onClick={close}
             aria-label="Close menu"
-            className="rounded-md p-2 text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+            className="rounded-md p-2 text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500/40 dark:text-gray-300 dark:hover:bg-gray-800"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="flex flex-col gap-1 p-4 text-sm font-medium text-gray-700">
-          <Link href="/tournaments" onClick={close} className={drawerLinkClass}>
-            Tournaments
-          </Link>
-          <Link href="/organizer" onClick={close} className={drawerLinkClass}>
-            Organizer
-          </Link>
+        <div className="flex flex-col gap-1 p-4 text-sm font-medium text-gray-700 dark:text-gray-300">
+          {NAV_LINKS.map((link) => (
+            <Link key={link.href} href={link.href} onClick={close} className={drawerLinkClass}>
+              {link.label}
+            </Link>
+          ))}
 
           {status === 'authenticated' && (
             <>
@@ -164,7 +178,7 @@ export default function Navbar() {
                   close();
                   signOut({ callbackUrl: '/' });
                 }}
-                className={`${drawerLinkClass} border border-gray-300`}
+                className={`${drawerLinkClass} border border-gray-300 dark:border-gray-700`}
               >
                 Logout
               </button>
