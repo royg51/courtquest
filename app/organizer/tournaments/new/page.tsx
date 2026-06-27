@@ -1,6 +1,8 @@
-// Create new tournament page — ORGANIZER+ role required.
-// Implemented in Step 4 (Tournament creation).
+// Create new tournament page — the real implementation lives at
+// /dashboard/tournaments/new. This redirects rather than duplicating it.
+
+import { redirect } from 'next/navigation';
 
 export default function NewTournamentPage() {
-  return <div>Create tournament — not yet implemented</div>;
+  redirect('/dashboard/tournaments/new');
 }
