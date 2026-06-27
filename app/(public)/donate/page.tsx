@@ -1,7 +1,10 @@
 import type { Metadata } from 'next';
-import { Heart, CheckCircle2, XCircle } from 'lucide-react';
-import { isStripeConfigured } from '@/lib/payments';
+import Link from 'next/link';
+import { Heart, CheckCircle2, XCircle, Trophy, Users } from 'lucide-react';
+import { isStripeConfigured, retrieveCheckoutSession } from '@/lib/payments';
+import { getRecentDonations, getTopDonors } from '@/lib/donations';
 import DonationForm from '@/components/donate/DonationForm';
+import { DonationConfetti } from '@/components/donate/DonationConfetti';
 
 export const metadata: Metadata = {
   title: 'Donate',
@@ -35,24 +38,63 @@ const FAQ = [
   },
 ];
 
-export default function DonatePage({
+// Looks the just-completed Checkout Session up directly from Stripe rather
+// than our own DB — that's the webhook's job, and it can land a moment
+// after this redirect. Retrieving from Stripe gives an immediate, accurate
+// confirmation regardless of webhook timing.
+async function getSuccessDetails(sessionId: string) {
+  try {
+    const session = await retrieveCheckoutSession(sessionId);
+    if (session.payment_status !== 'paid') return null;
+    return {
+      name: session.customer_details?.name ?? null,
+      amountCents: session.amount_total ?? 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export default async function DonatePage({
   searchParams,
 }: {
-  searchParams: { status?: string };
+  searchParams: { status?: string; session_id?: string };
 }) {
   const configured = isStripeConfigured();
+  const successDetails =
+    configured && searchParams.status === 'success' && searchParams.session_id
+      ? await getSuccessDetails(searchParams.session_id)
+      : null;
+
+  const [recentDonations, topDonors] = await Promise.all([
+    getRecentDonations(),
+    getTopDonors(),
+  ]);
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-12">
-      {searchParams.status === 'success' && (
-        <div className="mb-8 flex items-start gap-3 rounded-md bg-green-50 px-4 py-3 text-sm text-green-800 dark:bg-green-900/30 dark:text-green-400">
-          <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
-          <div>
-            <p className="font-medium">Thank you for your donation!</p>
-            <p className="mt-0.5">
-              Stripe will email you a receipt shortly. Your support means a lot to us.
-            </p>
-          </div>
+      {successDetails && (
+        <div className="mb-8 rounded-lg border border-green-200 bg-green-50 px-6 py-8 text-center dark:border-green-900 dark:bg-green-900/20">
+          <DonationConfetti />
+          <CheckCircle2 className="mx-auto h-10 w-10 text-green-600 dark:text-green-400" />
+          <h1 className="mt-3 text-xl font-bold text-green-800 dark:text-green-300">
+            Thank you{successDetails.name ? `, ${successDetails.name}` : ''}!
+          </h1>
+          <p className="mt-1 text-green-700 dark:text-green-400">
+            Your donation of <span className="font-semibold">
+              ${(successDetails.amountCents / 100).toFixed(2)}
+            </span>{' '}
+            means a lot to us.
+          </p>
+          <p className="mt-1 text-sm text-green-700/80 dark:text-green-400/80">
+            Stripe will email you a receipt shortly.
+          </p>
+          <Link
+            href="/"
+            className="mt-5 inline-flex items-center rounded-md border border-green-300 bg-white px-4 py-2 text-sm font-medium text-green-800 transition-colors hover:bg-green-50 dark:border-green-800 dark:bg-gray-900 dark:text-green-300 dark:hover:bg-gray-800"
+          >
+            Back to Home
+          </Link>
         </div>
       )}
       {searchParams.status === 'canceled' && (
@@ -98,6 +140,59 @@ export default function DonatePage({
           </div>
         )}
       </section>
+
+      {(recentDonations.length > 0 || topDonors.length > 0) && (
+        <section className="mt-12 grid gap-8 sm:grid-cols-2">
+          {topDonors.length > 0 && (
+            <div>
+              <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
+                <Trophy className="h-5 w-5 text-brand-600 dark:text-brand-400" />
+                Top Donors
+              </h2>
+              <ul className="space-y-2">
+                {topDonors.map((donor, i) => (
+                  <li
+                    key={donor.donorName}
+                    className="flex items-center justify-between rounded-md border border-gray-200 px-3 py-2 text-sm dark:border-gray-800"
+                  >
+                    <span className="text-gray-900 dark:text-gray-100">
+                      <span className="mr-2 text-gray-400 dark:text-gray-500">#{i + 1}</span>
+                      {donor.donorName}
+                    </span>
+                    <span className="font-semibold text-brand-600 dark:text-brand-400">
+                      ${(donor.totalCents / 100).toFixed(0)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {recentDonations.length > 0 && (
+            <div>
+              <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
+                <Users className="h-5 w-5 text-brand-600 dark:text-brand-400" />
+                Recent Donations
+              </h2>
+              <ul className="space-y-2">
+                {recentDonations.map((donation) => (
+                  <li
+                    key={donation.id}
+                    className="flex items-center justify-between rounded-md border border-gray-200 px-3 py-2 text-sm dark:border-gray-800"
+                  >
+                    <span className="text-gray-900 dark:text-gray-100">
+                      {donation.donorName ?? 'Anonymous'}
+                    </span>
+                    <span className="font-semibold text-brand-600 dark:text-brand-400">
+                      ${(donation.amountCents / 100).toFixed(0)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </section>
+      )}
 
       <section className="mt-12">
         <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">FAQ</h2>

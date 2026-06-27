@@ -29,6 +29,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const session = await createDonationCheckoutSession(parsed.data.amountCents);
+  const session = await createDonationCheckoutSession(parsed.data.amountCents, {
+    isAnonymous: parsed.data.isAnonymous,
+  });
   return NextResponse.json({ url: session.url });
 }

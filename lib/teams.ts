@@ -33,6 +33,12 @@ export async function getUserTeamForTournament(tournamentId: string, userId: str
   });
 }
 
+// Entry-fee revenue is a different revenue stream than donations and isn't
+// tracked on the Donation model — it's derived from paid registrations.
+export async function getPaidTeamCount(tournamentId: string) {
+  return db.team.count({ where: { tournamentId, paymentStatus: 'PAID' } });
+}
+
 export class RegistrationError extends Error {
   code: string;
   constructor(code: string, message: string) {

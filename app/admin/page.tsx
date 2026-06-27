@@ -9,6 +9,7 @@ import { redirect } from 'next/navigation';
 import { Users, Trophy, Activity, UserCheck } from 'lucide-react';
 import { auth, requireRole } from '@/lib/auth';
 import { getPlatformStats } from '@/lib/stats';
+import { isStripeConfigured, isStripeLiveMode } from '@/lib/payments';
 
 export const metadata: Metadata = { title: 'Admin' };
 
@@ -41,6 +42,18 @@ export default async function AdminPage() {
           Manage Users
         </Link>
       </div>
+
+      {isStripeConfigured() && (
+        <p
+          className={`mb-6 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
+            isStripeLiveMode()
+              ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+              : 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+          }`}
+        >
+          Stripe: {isStripeLiveMode() ? 'Live Mode' : 'Test Mode'}
+        </p>
+      )}
       <div className="grid gap-4 sm:grid-cols-2">
         {cards.map(({ icon: Icon, label, value }) => (
           <div key={label} className="rounded-lg border border-gray-200 p-4 dark:border-gray-800">

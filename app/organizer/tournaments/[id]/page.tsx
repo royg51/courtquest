@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { redirect, notFound } from 'next/navigation';
 import { auth, requireRole } from '@/lib/auth';
 import { getTournamentById } from '@/lib/tournaments';
+import { getPaidTeamCount } from '@/lib/teams';
 import { CopyLinkButton } from '@/components/organizer/CopyLinkButton';
 import { GenerateBracketButton } from '@/components/organizer/GenerateBracketButton';
 import { UpdateStatusButton } from '@/components/organizer/UpdateStatusButton';
@@ -32,6 +33,8 @@ export default async function OrganizerTournamentPage({
   }
 
   const publicUrl = `${APP_URL}/tournaments/${tournament.slug}`;
+  const paidTeamCount = tournament.requiresPayment ? await getPaidTeamCount(tournament.id) : 0;
+  const revenueCents = paidTeamCount * tournament.entryFeeCents;
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-8">
@@ -47,7 +50,7 @@ export default async function OrganizerTournamentPage({
         <CopyLinkButton url={publicUrl} />
       </div>
 
-      <dl className="mt-6 grid grid-cols-2 gap-4 text-sm">
+      <dl className={`mt-6 grid gap-4 text-sm ${tournament.requiresPayment ? 'grid-cols-3' : 'grid-cols-2'}`}>
         <div>
           <dt className="text-gray-500 dark:text-gray-400">Registered</dt>
           <dd className="font-medium text-gray-900 dark:text-gray-100">
@@ -60,6 +63,17 @@ export default async function OrganizerTournamentPage({
             {new Date(tournament.startDate).toLocaleDateString()}
           </dd>
         </div>
+        {tournament.requiresPayment && (
+          <div>
+            <dt className="text-gray-500 dark:text-gray-400">Entry fee revenue</dt>
+            <dd className="font-medium text-gray-900 dark:text-gray-100">
+              ${(revenueCents / 100).toFixed(2)}{' '}
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                ({paidTeamCount} paid)
+              </span>
+            </dd>
+          </div>
+        )}
       </dl>
 
       <div className="mt-8 flex flex-wrap items-center gap-3">

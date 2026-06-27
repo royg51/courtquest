@@ -8,6 +8,7 @@ const SUGGESTED_AMOUNTS = [25, 50, 100, 250];
 export default function DonationForm() {
   const [selected, setSelected] = useState<number | null>(50);
   const [customAmount, setCustomAmount] = useState('');
+  const [isAnonymous, setIsAnonymous] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const amountDollars = customAmount ? Number(customAmount) : selected;
@@ -23,7 +24,7 @@ export default function DonationForm() {
       const res = await fetch('/api/donations/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amountCents: Math.round(amountDollars * 100) }),
+        body: JSON.stringify({ amountCents: Math.round(amountDollars * 100), isAnonymous }),
       });
 
       if (!res.ok) {
@@ -82,6 +83,16 @@ export default function DonationForm() {
           />
         </div>
       </div>
+
+      <label className="mt-4 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+        <input
+          type="checkbox"
+          checked={isAnonymous}
+          onChange={(e) => setIsAnonymous(e.target.checked)}
+          className="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500/40 dark:border-gray-700"
+        />
+        Donate anonymously (hide my name from public donor lists)
+      </label>
 
       <button
         type="button"

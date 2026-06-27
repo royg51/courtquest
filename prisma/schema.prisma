@@ -196,7 +196,10 @@ model Donation {
   donorName       String?
   donorEmail      String?
   isAnonymous     Boolean  @default(false)
-  stripePaymentId String?
+  // Unique so the Stripe webhook can be retried safely — Stripe redelivers
+  // events on timeout/non-200, and without this a retry would insert a
+  // second Donation row for the same payment.
+  stripePaymentId String?  @unique
   message         String?
   createdAt       DateTime @default(now())
 }

@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { Prisma } from '@prisma/client';
 import { constructWebhookEvent, isStripeConfigured } from '@/lib/payments';
 import { db } from '@/lib/db';
 
@@ -45,15 +46,26 @@ export async function POST(request: NextRequest) {
         },
       });
     } else if (type === 'donation') {
-      await db.donation.create({
-        data: {
-          amountCents: session.amount_total ?? 0,
-          donorName: session.customer_details?.name ?? undefined,
-          donorEmail: session.customer_details?.email ?? undefined,
-          stripePaymentId:
-            typeof session.payment_intent === 'string' ? session.payment_intent : session.id,
-        },
-      });
+      try {
+        await db.donation.create({
+          data: {
+            amountCents: session.amount_total ?? 0,
+            donorName: session.customer_details?.name ?? undefined,
+            donorEmail: session.customer_details?.email ?? undefined,
+            isAnonymous: session.metadata?.isAnonymous === 'true',
+            stripePaymentId:
+              typeof session.payment_intent === 'string' ? session.payment_intent : session.id,
+          },
+        });
+      } catch (error) {
+        // Stripe redelivers events on timeout or a non-2xx response — this
+        // donation was already recorded by an earlier delivery of the same
+        // event, not a new payment. Treat as success rather than retrying
+        // forever or recording a duplicate.
+        const alreadyRecorded =
+          error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002';
+        if (!alreadyRecorded) throw error;
+      }
     }
   }
 
