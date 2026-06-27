@@ -3,14 +3,6 @@
 
 import { db } from '@/lib/db';
 
-export async function getOrganizedTournaments(userId: string) {
-  return db.tournament.findMany({
-    where: { organizerId: userId },
-    orderBy: { startDate: 'asc' },
-    include: { _count: { select: { teams: true } } },
-  });
-}
-
 export async function getJoinedTeams(userId: string) {
   return db.team.findMany({
     where: { members: { some: { userId } }, status: { not: 'WITHDRAWN' } },

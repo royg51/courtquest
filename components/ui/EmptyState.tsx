@@ -12,7 +12,7 @@ export function EmptyState({ icon: Icon, title, description }: Props) {
       <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-400">
         <Icon className="h-6 w-6" aria-hidden="true" />
       </div>
-      <h1 className="mt-4 text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</h1>
+      <h2 className="mt-4 text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</h2>
       <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">{description}</p>
     </div>
   );

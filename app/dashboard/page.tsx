@@ -1,18 +1,14 @@
-// Player dashboard — auth required.
-// Shows tournaments organized (if any), tournaments joined, upcoming
-// matches, and recent results — all live data, no mocks.
+// Player dashboard — auth required, player-focused only.
+// Shows tournaments joined, upcoming matches, recent results, personal
+// stats, and quick actions. Tournament *management* lives on /organizer —
+// this page intentionally does not duplicate that list or its controls.
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Trophy, Users } from 'lucide-react';
+import { Users, Trophy, Target, TrendingUp, Compass, Settings } from 'lucide-react';
 import { auth } from '@/lib/auth';
-import {
-  getOrganizedTournaments,
-  getJoinedTeams,
-  getUpcomingMatchesForUser,
-  getRecentResultsForUser,
-} from '@/lib/dashboard';
+import { getJoinedTeams, getUpcomingMatchesForUser, getRecentResultsForUser } from '@/lib/dashboard';
 import { EmptyState } from '@/components/ui/EmptyState';
 
 export const metadata: Metadata = { title: 'Dashboard' };
@@ -24,51 +20,65 @@ export default async function DashboardPage() {
     redirect('/login?callbackUrl=/dashboard');
   }
 
-  const [organized, joined, upcoming, results] = await Promise.all([
-    getOrganizedTournaments(session.user.id),
+  const [joined, upcoming, results] = await Promise.all([
     getJoinedTeams(session.user.id),
     getUpcomingMatchesForUser(session.user.id),
     getRecentResultsForUser(session.user.id),
   ]);
 
   const myTeamIds = new Set(joined.map((team) => team.id));
+  const wins = results.filter((match) => {
+    const myTeamIsA = !!match.teamA && myTeamIds.has(match.teamA.id);
+    const myTeamIsB = !!match.teamB && myTeamIds.has(match.teamB.id);
+    return (
+      (myTeamIsA && match.winnerId === match.teamA?.id) ||
+      (myTeamIsB && match.winnerId === match.teamB?.id)
+    );
+  }).length;
+  const winRate = results.length > 0 ? Math.round((wins / results.length) * 100) : null;
+  const isOrganizer = session.user.role === 'ORGANIZER' || session.user.role === 'ADMIN';
+
+  const stats = [
+    { icon: Trophy, label: 'Tournaments Joined', value: joined.length },
+    { icon: Target, label: 'Matches Played', value: results.length },
+    { icon: TrendingUp, label: 'Win Rate', value: winRate === null ? '—' : `${winRate}%` },
+  ];
 
   return (
     <main className="mx-auto max-w-3xl space-y-10 px-4 py-8">
       <h1 className="text-2xl font-bold text-brand-700 dark:text-brand-400">Dashboard</h1>
 
-      {(session.user.role === 'ORGANIZER' || session.user.role === 'ADMIN') && (
-        <section>
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Organizing</h2>
-            <Link href="/organizer" className="text-sm font-medium text-brand-700 hover:underline dark:text-brand-400">
-              View all
-            </Link>
+      <section className="grid grid-cols-3 gap-4">
+        {stats.map(({ icon: Icon, label, value }) => (
+          <div
+            key={label}
+            className="rounded-lg border border-gray-200 p-4 text-center dark:border-gray-800"
+          >
+            <Icon className="mx-auto h-5 w-5 text-brand-600 dark:text-brand-400" aria-hidden="true" />
+            <p className="mt-2 text-2xl font-bold text-gray-900 dark:text-gray-100">{value}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
           </div>
-          {organized.length === 0 ? (
-            <EmptyState
-              icon={Trophy}
-              title="You haven't created a tournament yet"
-              description="Get started from the Organizer page."
-            />
-          ) : (
-            <div className="space-y-2">
-              {organized.slice(0, 3).map((tournament) => (
-                <Link
-                  key={tournament.id}
-                  href={`/organizer/tournaments/${tournament.id}`}
-                  className="flex items-center justify-between rounded-lg border border-gray-200 p-3 transition-colors hover:border-brand-200 hover:bg-brand-50/30 dark:border-gray-800 dark:hover:border-brand-800 dark:hover:bg-brand-900/10"
-                >
-                  <span className="font-medium text-gray-900 dark:text-gray-100">{tournament.name}</span>
-                  <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700 dark:bg-brand-900/30 dark:text-brand-400">
-                    {tournament.status}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          )}
-        </section>
-      )}
+        ))}
+      </section>
+
+      <section className="flex flex-wrap gap-3">
+        <Link
+          href="/tournaments"
+          className="inline-flex items-center gap-1.5 rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+        >
+          <Compass className="h-4 w-4" aria-hidden="true" />
+          Browse Tournaments
+        </Link>
+        {isOrganizer && (
+          <Link
+            href="/organizer"
+            className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500/40 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+          >
+            <Settings className="h-4 w-4" aria-hidden="true" />
+            Manage Tournaments
+          </Link>
+        )}
+      </section>
 
       <section>
         <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">Your Tournaments</h2>

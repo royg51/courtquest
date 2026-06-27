@@ -4,7 +4,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Trophy } from 'lucide-react';
+import { Trophy, Users, Activity, CheckCircle2 } from 'lucide-react';
 import { auth, requireRole } from '@/lib/auth';
 import { listTournaments } from '@/lib/tournaments';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -22,6 +22,16 @@ export default async function OrganizerPage() {
 
   const tournaments = await listTournaments({ organizerId: session.user.id });
 
+  const totalParticipants = tournaments.reduce((sum, t) => sum + t._count.teams, 0);
+  const activeCount = tournaments.filter((t) => t.status === 'OPEN' || t.status === 'IN_PROGRESS').length;
+  const completedCount = tournaments.filter((t) => t.status === 'COMPLETED').length;
+  const analytics = [
+    { icon: Trophy, label: 'Tournaments Created', value: tournaments.length },
+    { icon: Activity, label: 'Active Now', value: activeCount },
+    { icon: CheckCircle2, label: 'Completed', value: completedCount },
+    { icon: Users, label: 'Total Registrations', value: totalParticipants },
+  ];
+
   return (
     <main className="mx-auto max-w-3xl px-4 py-8">
       <div className="mb-6 flex items-center justify-between">
@@ -33,6 +43,21 @@ export default async function OrganizerPage() {
           Create Tournament
         </Link>
       </div>
+
+      {tournaments.length > 0 && (
+        <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
+          {analytics.map(({ icon: Icon, label, value }) => (
+            <div
+              key={label}
+              className="rounded-lg border border-gray-200 p-4 text-center dark:border-gray-800"
+            >
+              <Icon className="mx-auto h-5 w-5 text-brand-600 dark:text-brand-400" aria-hidden="true" />
+              <p className="mt-2 text-2xl font-bold text-gray-900 dark:text-gray-100">{value}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
       {tournaments.length === 0 ? (
         <EmptyState
