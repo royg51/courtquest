@@ -28,7 +28,6 @@ const SOCIAL_LINKS = [
 ];
 
 const QUICK_LINKS = [
-  { href: '/tournaments', label: 'Tournaments' },
   { href: '/events', label: 'Events' },
   { href: '/about', label: 'About' },
   { href: '/donate', label: 'Donate' },
