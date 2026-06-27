@@ -15,7 +15,11 @@ export default function OrganizerBracketView({ tournamentId }: Props) {
   const queryClient = useQueryClient();
 
   if (isLoading) {
-    return <p className="px-4 py-16 text-center text-sm text-gray-500">Loading bracket…</p>;
+    return (
+      <p className="px-4 py-16 text-center text-sm text-gray-500 dark:text-gray-400">
+        Loading bracket…
+      </p>
+    );
   }
 
   if (!bracket) {
