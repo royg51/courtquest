@@ -171,6 +171,9 @@ model Match {
   winnerId     String?
   winner       Team?     @relation("Winner", fields: [winnerId], references: [id])
   status       String    @default("PENDING")
+  // Left-to-right position within the round — SQLite/Postgres don't
+  // guarantee insertion order on read, and bracket display needs one.
+  position     Int       @default(0)
   courtNumber  Int?
   scheduledAt  DateTime?
   completedAt  DateTime?

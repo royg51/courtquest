@@ -2,24 +2,62 @@
 // DELETE /api/tournaments/[id]/teams/[tid]  — withdraw team (member or organizer)
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { auth, requireRole } from '@/lib/auth';
+import { getTournamentById } from '@/lib/tournaments';
+import { updateTeamStatus, withdrawTeam, RegistrationError } from '@/lib/teams';
+import { updateTeamStatusSchema } from '@/lib/schemas/team';
 
 export async function PATCH(
-  _request: NextRequest,
-  _ctx: { params: { id: string; tid: string } }
+  request: NextRequest,
+  { params }: { params: { id: string; tid: string } }
 ) {
-  // TODO: auth + ownership check, call updateTeamStatus() from @/lib/teams
-  return NextResponse.json({ message: 'Not implemented' }, { status: 501 });
+  const session = await auth();
+  const tournament = await getTournamentById(params.id);
+  if (!tournament) {
+    return NextResponse.json({ error: 'Not found', code: 'NOT_FOUND' }, { status: 404 });
+  }
+
+  const isOwner = session?.user?.id === tournament.organizerId;
+  if (!isOwner && !requireRole(session, 'ADMIN')) {
+    return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
+  }
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON', code: 'BAD_REQUEST' }, { status: 400 });
+  }
+
+  const parsed = updateTeamStatusSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: 'Validation failed', code: 'VALIDATION_ERROR', issues: parsed.error.issues },
+      { status: 422 }
+    );
+  }
+
+  const team = await updateTeamStatus(params.tid, parsed.data.status);
+  return NextResponse.json({ team });
 }
 
 export async function DELETE(
   _request: NextRequest,
-  _ctx: { params: { id: string; tid: string } }
+  { params }: { params: { id: string; tid: string } }
 ) {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
   }
-  // TODO: call withdrawTeam(params.tid, session.user.id) from @/lib/teams
-  return NextResponse.json({ message: 'Not implemented' }, { status: 501 });
+
+  try {
+    const team = await withdrawTeam(params.tid, session.user.id);
+    return NextResponse.json({ team });
+  } catch (error) {
+    if (error instanceof RegistrationError) {
+      const status = error.code === 'NOT_FOUND' ? 404 : 403;
+      return NextResponse.json({ error: error.message, code: error.code }, { status });
+    }
+    throw error;
+  }
 }

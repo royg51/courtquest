@@ -1,11 +1,45 @@
 // Registration page for a tournament.
 // Requires auth — redirects to login if not signed in.
-// Implemented in Step 5 (Registration flow).
 
-export default function RegisterPage({
-  params,
-}: {
-  params: { slug: string };
-}) {
-  return <div>Register for {params.slug} — not yet implemented</div>;
+import { redirect, notFound } from 'next/navigation';
+import { auth } from '@/lib/auth';
+import { getTournamentBySlug } from '@/lib/tournaments';
+import RegistrationForm from '@/components/registration/RegistrationForm';
+
+export default async function RegisterPage({ params }: { params: { slug: string } }) {
+  const session = await auth();
+  if (!session?.user) {
+    redirect(`/login?callbackUrl=/tournaments/${params.slug}/register`);
+  }
+
+  const tournament = await getTournamentBySlug(params.slug);
+  if (!tournament) {
+    notFound();
+  }
+
+  if (tournament.status !== 'OPEN') {
+    return (
+      <main className="mx-auto max-w-md px-4 py-16 text-center">
+        <h1 className="text-xl font-bold text-gray-900">Registration isn&apos;t open</h1>
+        <p className="mt-2 text-sm text-gray-600">
+          {tournament.name} is not currently accepting registrations.
+        </p>
+      </main>
+    );
+  }
+
+  return (
+    <main>
+      <h1 className="mx-auto max-w-md px-4 pt-8 text-2xl font-bold text-brand-700">
+        Register for {tournament.name}
+      </h1>
+      <RegistrationForm
+        tournamentId={tournament.id}
+        tournamentSlug={tournament.slug}
+        teamSize={tournament.teamSize as 1 | 2}
+        requiresPayment={tournament.requiresPayment}
+        entryFeeCents={tournament.entryFeeCents}
+      />
+    </main>
+  );
 }
