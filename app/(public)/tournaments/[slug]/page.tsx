@@ -1,8 +1,30 @@
 // Public tournament detail page.
 // Shows info now; registration button and bracket viewer come in later steps.
 
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTournamentBySlug } from '@/lib/tournaments';
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { slug: string };
+}): Promise<Metadata> {
+  const tournament = await getTournamentBySlug(params.slug);
+  if (!tournament) return {};
+
+  const title = tournament.name;
+  const description =
+    tournament.description ??
+    `${tournament.sport} tournament organized by ${tournament.organizer.name} on CourtQuest.`;
+
+  return {
+    title,
+    description,
+    openGraph: { title, description },
+    twitter: { title, description },
+  };
+}
 
 export default async function TournamentDetailPage({
   params,
@@ -15,8 +37,29 @@ export default async function TournamentDetailPage({
     notFound();
   }
 
+  const eventJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'SportsEvent',
+    name: tournament.name,
+    description: tournament.description ?? undefined,
+    sport: tournament.sport,
+    startDate: tournament.startDate.toISOString(),
+    endDate: tournament.endDate.toISOString(),
+    eventStatus: 'https://schema.org/EventScheduled',
+    eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+    location: tournament.venue
+      ? { '@type': 'Place', name: tournament.venue, address: tournament.address ?? undefined }
+      : undefined,
+    organizer: { '@type': 'Person', name: tournament.organizer.name },
+  };
+
   return (
     <main className="mx-auto max-w-2xl px-4 py-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(eventJsonLd) }}
+      />
+
       <h1 className="text-2xl font-bold text-brand-700">{tournament.name}</h1>
       <p className="mt-1 text-sm text-gray-500">
         {tournament.sport} · Organized by {tournament.organizer.name}

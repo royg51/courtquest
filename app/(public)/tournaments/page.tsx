@@ -1,8 +1,14 @@
 // Tournament list page — public, server component.
 
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { listTournaments } from '@/lib/tournaments';
 import TournamentCard from '@/components/tournament/TournamentCard';
+
+export const metadata: Metadata = {
+  title: 'Tournaments',
+  description: 'Browse upcoming and ongoing pickleball tournaments on CourtQuest.',
+};
 
 // Without this, Next statically prerenders the list at build time and new
 // tournaments wouldn't show up until the next deploy.
