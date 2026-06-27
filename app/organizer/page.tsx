@@ -34,11 +34,11 @@ export default async function OrganizerPage() {
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold text-brand-700 dark:text-brand-400">Your Tournaments</h1>
         <Link
           href="/dashboard/tournaments/new"
-          className="rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+          className="inline-flex shrink-0 items-center justify-center rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
         >
           Create Tournament
         </Link>
