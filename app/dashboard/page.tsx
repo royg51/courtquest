@@ -35,13 +35,13 @@ export default async function DashboardPage() {
 
   return (
     <main className="mx-auto max-w-3xl space-y-10 px-4 py-8">
-      <h1 className="text-2xl font-bold text-brand-700">Dashboard</h1>
+      <h1 className="text-2xl font-bold text-brand-700 dark:text-brand-400">Dashboard</h1>
 
       {(session.user.role === 'ORGANIZER' || session.user.role === 'ADMIN') && (
         <section>
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Organizing</h2>
-            <Link href="/organizer" className="text-sm font-medium text-brand-700 hover:underline">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Organizing</h2>
+            <Link href="/organizer" className="text-sm font-medium text-brand-700 hover:underline dark:text-brand-400">
               View all
             </Link>
           </div>
@@ -57,10 +57,10 @@ export default async function DashboardPage() {
                 <Link
                   key={tournament.id}
                   href={`/organizer/tournaments/${tournament.id}`}
-                  className="flex items-center justify-between rounded-lg border border-gray-200 p-3 transition-colors hover:border-brand-200 hover:bg-brand-50/30"
+                  className="flex items-center justify-between rounded-lg border border-gray-200 p-3 transition-colors hover:border-brand-200 hover:bg-brand-50/30 dark:border-gray-800 dark:hover:border-brand-800 dark:hover:bg-brand-900/10"
                 >
-                  <span className="font-medium text-gray-900">{tournament.name}</span>
-                  <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700">
+                  <span className="font-medium text-gray-900 dark:text-gray-100">{tournament.name}</span>
+                  <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700 dark:bg-brand-900/30 dark:text-brand-400">
                     {tournament.status}
                   </span>
                 </Link>
@@ -71,7 +71,7 @@ export default async function DashboardPage() {
       )}
 
       <section>
-        <h2 className="mb-3 text-lg font-semibold text-gray-900">Your Tournaments</h2>
+        <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">Your Tournaments</h2>
         {joined.length === 0 ? (
           <EmptyState
             icon={Users}
@@ -84,13 +84,13 @@ export default async function DashboardPage() {
               <Link
                 key={team.id}
                 href={`/tournaments/${team.tournament.slug}`}
-                className="flex items-center justify-between rounded-lg border border-gray-200 p-3 transition-colors hover:border-brand-200 hover:bg-brand-50/30"
+                className="flex items-center justify-between rounded-lg border border-gray-200 p-3 transition-colors hover:border-brand-200 hover:bg-brand-50/30 dark:border-gray-800 dark:hover:border-brand-800 dark:hover:bg-brand-900/10"
               >
                 <div>
-                  <p className="font-medium text-gray-900">{team.tournament.name}</p>
-                  <p className="text-sm text-gray-500">Team: {team.name}</p>
+                  <p className="font-medium text-gray-900 dark:text-gray-100">{team.tournament.name}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Team: {team.name}</p>
                 </div>
-                <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700">
+                <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700 dark:bg-brand-900/30 dark:text-brand-400">
                   {team.status}
                 </span>
               </Link>
@@ -100,21 +100,21 @@ export default async function DashboardPage() {
       </section>
 
       <section>
-        <h2 className="mb-3 text-lg font-semibold text-gray-900">Upcoming Matches</h2>
+        <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">Upcoming Matches</h2>
         {upcoming.length === 0 ? (
-          <p className="text-sm text-gray-500">No upcoming matches.</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">No upcoming matches.</p>
         ) : (
           <div className="space-y-2">
             {upcoming.map((match) => (
               <Link
                 key={match.id}
                 href={`/tournaments/${match.round.bracket.tournament.slug}/bracket`}
-                className="block rounded-lg border border-gray-200 p-3 text-sm transition-colors hover:border-brand-200 hover:bg-brand-50/30"
+                className="block rounded-lg border border-gray-200 p-3 text-sm transition-colors hover:border-brand-200 hover:bg-brand-50/30 dark:border-gray-800 dark:hover:border-brand-800 dark:hover:bg-brand-900/10"
               >
-                <p className="text-gray-500">
+                <p className="text-gray-500 dark:text-gray-400">
                   {match.round.bracket.tournament.name} · {match.round.name}
                 </p>
-                <p className="mt-1 font-medium text-gray-900">
+                <p className="mt-1 font-medium text-gray-900 dark:text-gray-100">
                   {match.teamA?.name ?? 'TBD'} vs {match.teamB?.name ?? 'TBD'}
                 </p>
               </Link>
@@ -124,9 +124,9 @@ export default async function DashboardPage() {
       </section>
 
       <section>
-        <h2 className="mb-3 text-lg font-semibold text-gray-900">Recent Results</h2>
+        <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">Recent Results</h2>
         {results.length === 0 ? (
-          <p className="text-sm text-gray-500">No completed matches yet.</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">No completed matches yet.</p>
         ) : (
           <div className="space-y-2">
             {results.map((match) => {
@@ -136,17 +136,17 @@ export default async function DashboardPage() {
                 (myTeamIsA && match.winnerId === match.teamA?.id) ||
                 (myTeamIsB && match.winnerId === match.teamB?.id);
               return (
-                <div key={match.id} className="rounded-lg border border-gray-200 p-3 text-sm">
-                  <p className="text-gray-500">
+                <div key={match.id} className="rounded-lg border border-gray-200 p-3 text-sm dark:border-gray-800">
+                  <p className="text-gray-500 dark:text-gray-400">
                     {match.round.bracket.tournament.name} · {match.round.name}
                   </p>
                   <div className="mt-1 flex items-center justify-between">
-                    <p className="font-medium text-gray-900">
+                    <p className="font-medium text-gray-900 dark:text-gray-100">
                       {match.teamA?.name} {match.scoreA}–{match.scoreB} {match.teamB?.name}
                     </p>
                     {(myTeamIsA || myTeamIsB) && (
                       <span
-                        className={`text-xs font-semibold ${won ? 'text-brand-700' : 'text-gray-400'}`}
+                        className={`text-xs font-semibold ${won ? 'text-brand-700 dark:text-brand-400' : 'text-gray-400 dark:text-gray-500'}`}
                       >
                         {won ? 'Won' : 'Lost'}
                       </span>

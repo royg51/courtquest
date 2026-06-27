@@ -20,8 +20,10 @@ export default async function RegisterPage({ params }: { params: { slug: string 
   if (tournament.status !== 'OPEN') {
     return (
       <main className="mx-auto max-w-md px-4 py-16 text-center">
-        <h1 className="text-xl font-bold text-gray-900">Registration isn&apos;t open</h1>
-        <p className="mt-2 text-sm text-gray-600">
+        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+          Registration isn&apos;t open
+        </h1>
+        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
           {tournament.name} is not currently accepting registrations.
         </p>
       </main>
@@ -30,7 +32,7 @@ export default async function RegisterPage({ params }: { params: { slug: string 
 
   return (
     <main>
-      <h1 className="mx-auto max-w-md px-4 pt-8 text-2xl font-bold text-brand-700">
+      <h1 className="mx-auto max-w-md px-4 pt-8 text-2xl font-bold text-brand-700 dark:text-brand-400">
         Register for {tournament.name}
       </h1>
       <RegistrationForm

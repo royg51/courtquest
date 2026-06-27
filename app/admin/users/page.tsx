@@ -22,8 +22,8 @@ export default async function AdminUsersPage() {
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="mb-2 text-2xl font-bold text-brand-700">Manage Users</h1>
-      <p className="mb-6 text-sm text-gray-600">
+      <h1 className="mb-2 text-2xl font-bold text-brand-700 dark:text-brand-400">Manage Users</h1>
+      <p className="mb-6 text-sm text-gray-600 dark:text-gray-400">
         PLAYER is the default role. ORGANIZER can create and manage their own tournaments. ADMIN
         can manage every tournament and promote other users.
       </p>

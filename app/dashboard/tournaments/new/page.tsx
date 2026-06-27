@@ -19,7 +19,7 @@ export default async function NewTournamentPage() {
 
   return (
     <main>
-      <h1 className="mx-auto max-w-md px-4 pt-8 text-2xl font-bold text-brand-700">
+      <h1 className="mx-auto max-w-md px-4 pt-8 text-2xl font-bold text-brand-700 dark:text-brand-400">
         Create a Tournament
       </h1>
       <CreateTournamentForm />
