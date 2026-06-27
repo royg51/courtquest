@@ -15,7 +15,7 @@ Project-specific guidance for working in `courtquest/`. See the root [`/Users/ro
 - No `any` types.
 - Prisma queries must be safe and properly typed — no unchecked raw queries.
 - Auth/session logic must stay minimal and correct; don't duplicate auth logic across files — route through `lib/auth.ts`.
-- SQLite `DATABASE_URL` must be `file:./dev.db`, NOT `file:./prisma/dev.db`. Prisma resolves relative SQLite paths relative to `prisma/schema.prisma`, so a `prisma/` prefix silently resolves to a nested `prisma/prisma/dev.db` instead of the real database.
+- Database is PostgreSQL (Supabase). `DATABASE_URL` (pooled, port 6543) and `DIRECT_URL` (direct, port 5432) must both be set, in both `.env` (read by the Prisma CLI) and `.env.local` (read by Next.js) — keep them in sync. Enum-like fields stay as Prisma `String`, not native Postgres enums — that's intentional (see root CLAUDE.md), not something to "fix."
 
 ## Auth rules
 

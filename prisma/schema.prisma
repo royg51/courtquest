@@ -1,21 +1,27 @@
 // Prisma schema for CourtQuest 2.0
-// SQLite is used in dev; enums are stored as String (SQLite has no native enum type).
-// To swap to PostgreSQL for production:
-//   1. Change provider to "postgresql"
-//   2. Update DATABASE_URL in .env.local
-//   3. Optionally convert String fields back to Prisma enums
-//   4. Run `prisma migrate deploy`
+// PostgreSQL (Supabase), originally migrated from SQLite. Enum-like fields
+// are intentionally kept as String — that's a carryover from SQLite (which
+// has no native enum type) that we're preserving rather than "upgrading" to
+// real Postgres enums, since callers throughout the app rely on the
+// string-union types in types/index.ts rather than Prisma enum types. This
+// keeps the migration purely a storage-engine swap, not a data-model change.
 //
-// TypeScript enum types live in types/index.ts (union strings) so callers
-// get type-checking without depending on Prisma enum support.
+// Two connection strings, per Supabase + Prisma's recommended setup:
+//   - DATABASE_URL: pooled (PgBouncer, port 6543) — used by the app at
+//     runtime, where many short-lived serverless-style connections are
+//     normal.
+//   - DIRECT_URL: direct (port 5432) — used only by `prisma migrate`, since
+//     migrations need a non-pooled connection (advisory locks, schema
+//     changes don't work reliably through a transaction-mode pooler).
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ─── Auth.js Models ──────────────────────────────────────────────────────────
