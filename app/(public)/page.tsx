@@ -36,7 +36,7 @@ export default async function HomePage() {
 
   return (
     <main>
-      <section className="bg-gradient-to-b from-brand-50 via-white to-white px-4 py-20 text-center sm:py-28">
+      <section className="bg-gradient-to-b from-brand-50 via-white to-white px-4 py-20 text-center sm:py-28 dark:from-gray-900 dark:via-gray-950 dark:to-gray-950">
         <div className="mx-auto flex max-w-2xl animate-fade-in-up flex-col items-center gap-6">
           <Image
             src="/logo.png"
@@ -47,16 +47,16 @@ export default async function HomePage() {
             priority
           />
 
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-semibold text-brand-700 ring-1 ring-inset ring-brand-200">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-semibold text-brand-700 ring-1 ring-inset ring-brand-200 dark:bg-gray-900 dark:text-brand-400 dark:ring-brand-800">
             <BadgeCheck className="h-3.5 w-3.5" />
             501(c)(3) Certified Nonprofit
           </span>
 
           <div className="space-y-3">
-            <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
-              Transform Communities <span className="text-brand-600">Through Sports</span>
+            <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl dark:text-gray-100">
+              Transform Communities <span className="text-brand-600 dark:text-brand-400">Through Sports</span>
             </h1>
-            <p className="mx-auto max-w-xl text-lg text-gray-600">
+            <p className="mx-auto max-w-xl text-lg text-gray-600 dark:text-gray-400">
               Join CourtQuest in organizing competitive sports tournaments that strengthen
               communities while raising funds for local causes.
             </p>
@@ -74,7 +74,7 @@ export default async function HomePage() {
             {isLoggedIn ? (
               <Link
                 href="/dashboard"
-                className="rounded-md border border-brand-600 bg-white px-5 py-2.5 font-medium text-brand-700 transition-colors hover:bg-brand-50 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+                className="rounded-md border border-brand-600 bg-white px-5 py-2.5 font-medium text-brand-700 transition-colors hover:bg-brand-50 focus:outline-none focus:ring-2 focus:ring-brand-500/40 dark:bg-gray-900 dark:text-brand-400 dark:hover:bg-gray-800"
               >
                 Go to Dashboard
               </Link>
@@ -82,13 +82,13 @@ export default async function HomePage() {
               <>
                 <Link
                   href="/login"
-                  className="rounded-md border border-gray-300 bg-white px-5 py-2.5 font-medium text-gray-700 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+                  className="rounded-md border border-gray-300 bg-white px-5 py-2.5 font-medium text-gray-700 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500/40 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
                 >
                   Login
                 </Link>
                 <Link
                   href="/signup"
-                  className="rounded-md border border-gray-300 bg-white px-5 py-2.5 font-medium text-gray-700 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+                  className="rounded-md border border-gray-300 bg-white px-5 py-2.5 font-medium text-gray-700 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500/40 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
                 >
                   Sign Up
                 </Link>
@@ -98,29 +98,29 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="border-t border-gray-200 bg-white px-4 py-12">
+      <section className="border-t border-gray-200 bg-white px-4 py-12 dark:border-gray-800 dark:bg-gray-950">
         <div className="mx-auto grid max-w-3xl gap-6 sm:grid-cols-3">
           {STATS.map((stat) => (
             <div key={stat.label} className="text-center">
-              <p className="text-3xl font-bold text-brand-600 sm:text-4xl">{stat.value}</p>
-              <p className="mt-1 text-sm text-gray-600">{stat.label}</p>
+              <p className="text-3xl font-bold text-brand-600 sm:text-4xl dark:text-brand-400">{stat.value}</p>
+              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">{stat.label}</p>
             </div>
           ))}
         </div>
       </section>
 
-      <section className="border-t border-gray-200 px-4 py-16 sm:py-20">
+      <section className="border-t border-gray-200 px-4 py-16 sm:py-20 dark:border-gray-800">
         <div className="mx-auto grid max-w-4xl gap-6 sm:grid-cols-3">
           {FEATURES.map(({ icon: Icon, title, description }) => (
             <div
               key={title}
-              className="group rounded-lg border border-gray-200 bg-white p-6 text-center transition-colors hover:border-brand-200 hover:bg-brand-50/30"
+              className="group rounded-lg border border-gray-200 bg-white p-6 text-center transition-colors hover:border-brand-200 hover:bg-brand-50/30 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-brand-800 dark:hover:bg-brand-900/10"
             >
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-brand-50 text-brand-600 transition-transform group-hover:scale-105">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-brand-50 text-brand-600 transition-transform group-hover:scale-105 dark:bg-brand-900/30 dark:text-brand-400">
                 <Icon className="h-6 w-6" />
               </div>
-              <h2 className="mt-4 font-semibold text-gray-900">{title}</h2>
-              <p className="mt-2 text-sm leading-relaxed text-gray-600">{description}</p>
+              <h2 className="mt-4 font-semibold text-gray-900 dark:text-gray-100">{title}</h2>
+              <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-400">{description}</p>
             </div>
           ))}
         </div>

@@ -41,28 +41,28 @@ export default function DonatePage() {
   return (
     <main className="mx-auto max-w-2xl px-4 py-12">
       <div className="text-center">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-brand-50 text-brand-600">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-400">
           <Heart className="h-6 w-6" />
         </div>
-        <h1 className="mt-4 text-2xl font-bold text-brand-700">Support CourtQuest</h1>
-        <p className="mx-auto mt-2 max-w-md text-gray-600">
+        <h1 className="mt-4 text-2xl font-bold text-brand-700 dark:text-brand-400">Support CourtQuest</h1>
+        <p className="mx-auto mt-2 max-w-md text-gray-600 dark:text-gray-400">
           Every dollar helps us organize more tournaments and raise more for the local causes our
           events support.
         </p>
       </div>
 
-      <section className="mt-8 grid gap-4 rounded-lg border border-gray-200 bg-brand-50/30 p-6 text-center sm:grid-cols-3">
+      <section className="mt-8 grid gap-4 rounded-lg border border-gray-200 bg-brand-50/30 p-6 text-center sm:grid-cols-3 dark:border-gray-800 dark:bg-brand-900/10">
         <div>
-          <p className="text-2xl font-bold text-brand-600">$3,000+</p>
-          <p className="text-xs text-gray-600">Raised so far</p>
+          <p className="text-2xl font-bold text-brand-600 dark:text-brand-400">$3,000+</p>
+          <p className="text-xs text-gray-600 dark:text-gray-400">Raised so far</p>
         </div>
         <div>
-          <p className="text-2xl font-bold text-brand-600">40+</p>
-          <p className="text-xs text-gray-600">Participants reached</p>
+          <p className="text-2xl font-bold text-brand-600 dark:text-brand-400">40+</p>
+          <p className="text-xs text-gray-600 dark:text-gray-400">Participants reached</p>
         </div>
         <div>
-          <p className="text-2xl font-bold text-brand-600">100%</p>
-          <p className="text-xs text-gray-600">Student-led</p>
+          <p className="text-2xl font-bold text-brand-600 dark:text-brand-400">100%</p>
+          <p className="text-xs text-gray-600 dark:text-gray-400">Student-led</p>
         </div>
       </section>
 
@@ -70,7 +70,7 @@ export default function DonatePage() {
         {configured ? (
           <DonationForm />
         ) : (
-          <div className="rounded-lg border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500">
+          <div className="rounded-lg border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
             Online donations aren&apos;t set up yet — check back soon, or reach out via the
             contact info in the footer.
           </div>
@@ -78,12 +78,12 @@ export default function DonatePage() {
       </section>
 
       <section className="mt-12">
-        <h2 className="mb-4 text-lg font-semibold text-gray-900">FAQ</h2>
+        <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">FAQ</h2>
         <div className="space-y-4">
           {FAQ.map((item) => (
             <div key={item.question}>
-              <p className="font-medium text-gray-900">{item.question}</p>
-              <p className="mt-1 text-sm text-gray-600">{item.answer}</p>
+              <p className="font-medium text-gray-900 dark:text-gray-100">{item.question}</p>
+              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">{item.answer}</p>
             </div>
           ))}
         </div>
