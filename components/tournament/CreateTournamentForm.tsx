@@ -76,6 +76,15 @@ export default function CreateTournamentForm() {
         {...register('maxParticipants', { valueAsNumber: true })}
       />
 
+      <TextField
+        label="Entry fee in dollars (optional, leave blank for free)"
+        type="number"
+        min="0"
+        step="1"
+        error={errors.entryFeeDollars?.message}
+        {...register('entryFeeDollars', { valueAsNumber: true })}
+      />
+
       <button
         type="submit"
         disabled={submitting}

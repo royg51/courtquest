@@ -1,0 +1,7 @@
+import { z } from 'zod';
+
+export const donationCheckoutSchema = z.object({
+  amountCents: z.coerce.number().int().min(100, 'Minimum donation is $1').max(100_000_00),
+});
+
+export type DonationCheckoutInput = z.infer<typeof donationCheckoutSchema>;

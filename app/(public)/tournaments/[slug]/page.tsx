@@ -3,9 +3,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { auth } from '@/lib/auth';
 import { getTournamentBySlug } from '@/lib/tournaments';
-import { getTeamsForTournament } from '@/lib/teams';
+import { getTeamsForTournament, getUserTeamForTournament } from '@/lib/teams';
 import PublicBracketView from '@/components/bracket/PublicBracketView';
+import { PayEntryFeeButton } from '@/components/registration/PayEntryFeeButton';
 
 export async function generateMetadata({
   params,
@@ -42,6 +44,13 @@ export default async function TournamentDetailPage({
   const teams = await getTeamsForTournament(tournament.id);
   const confirmedTeams = teams.filter((team) => team.status === 'CONFIRMED');
   const waitlistedCount = teams.filter((team) => team.status === 'WAITLISTED').length;
+
+  const session = await auth();
+  const myTeam = session?.user
+    ? await getUserTeamForTournament(tournament.id, session.user.id)
+    : null;
+  const needsPayment =
+    myTeam && tournament.requiresPayment && myTeam.paymentStatus !== 'PAID';
 
   const eventJsonLd = {
     '@context': 'https://schema.org',
@@ -98,7 +107,7 @@ export default async function TournamentDetailPage({
         )}
       </dl>
 
-      {tournament.status === 'OPEN' && (
+      {tournament.status === 'OPEN' && !myTeam && (
         <div className="mt-6">
           <Link
             href={`/tournaments/${tournament.slug}/register`}
@@ -106,6 +115,16 @@ export default async function TournamentDetailPage({
           >
             Register
           </Link>
+        </div>
+      )}
+
+      {needsPayment && myTeam && (
+        <div className="mt-6">
+          <PayEntryFeeButton
+            tournamentId={tournament.id}
+            teamId={myTeam.id}
+            entryFeeCents={tournament.entryFeeCents}
+          />
         </div>
       )}
 

@@ -8,6 +8,7 @@ export const createTournamentSchema = z.object({
   description: z.string().max(1000).optional(),
   sport: z.string().min(2).max(50),
   maxParticipants: z.coerce.number().int().min(2).max(256),
+  entryFeeDollars: z.coerce.number().min(0).max(1000).optional(),
 });
 
 export type CreateTournamentInput = z.infer<typeof createTournamentSchema>;
