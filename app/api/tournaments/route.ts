@@ -46,6 +46,8 @@ export async function POST(request: NextRequest) {
   const endDate = new Date(now + 15 * DAY_MS);
   const registrationDeadline = new Date(now + 7 * DAY_MS);
 
+  const entryFeeCents = Math.round((parsed.data.entryFeeDollars ?? 0) * 100);
+
   const tournament = await createTournament(session.user.id, {
     name: parsed.data.name,
     description: parsed.data.description,
@@ -56,6 +58,8 @@ export async function POST(request: NextRequest) {
     endDate,
     registrationDeadline,
     maxParticipants: parsed.data.maxParticipants,
+    entryFeeCents,
+    requiresPayment: entryFeeCents > 0,
   });
 
   return NextResponse.json({ tournament }, { status: 201 });

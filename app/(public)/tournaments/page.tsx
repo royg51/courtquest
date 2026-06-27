@@ -36,7 +36,7 @@ export default async function TournamentsPage({
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="mb-6 text-2xl font-bold text-brand-700">Tournaments</h1>
+      <h1 className="mb-6 text-2xl font-bold text-brand-700 dark:text-brand-400">Tournaments</h1>
 
       <div className="mb-6 flex gap-2">
         {FILTERS.map((filter) => (
@@ -46,7 +46,7 @@ export default async function TournamentsPage({
             className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500/40 ${
               filter.label === activeFilter.label
                 ? 'bg-brand-600 text-white'
-                : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                : 'border border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800'
             }`}
           >
             {filter.label}

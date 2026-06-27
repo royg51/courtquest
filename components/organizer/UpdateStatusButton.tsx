@@ -39,7 +39,7 @@ export function UpdateStatusButton({ tournamentId, status, label }: Props) {
       type="button"
       onClick={update}
       disabled={submitting}
-      className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500/40 disabled:opacity-50"
+      className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500/40 disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
     >
       {submitting ? 'Updating…' : label}
     </button>

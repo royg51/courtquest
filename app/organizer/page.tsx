@@ -25,7 +25,7 @@ export default async function OrganizerPage() {
   return (
     <main className="mx-auto max-w-3xl px-4 py-8">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-brand-700">Your Tournaments</h1>
+        <h1 className="text-2xl font-bold text-brand-700 dark:text-brand-400">Your Tournaments</h1>
         <Link
           href="/dashboard/tournaments/new"
           className="rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
@@ -46,16 +46,16 @@ export default async function OrganizerPage() {
             <Link
               key={tournament.id}
               href={`/organizer/tournaments/${tournament.id}`}
-              className="flex items-center justify-between rounded-lg border border-gray-200 p-4 transition-colors hover:border-brand-200 hover:bg-brand-50/30 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+              className="flex items-center justify-between rounded-lg border border-gray-200 p-4 transition-colors hover:border-brand-200 hover:bg-brand-50/30 focus:outline-none focus:ring-2 focus:ring-brand-500/40 dark:border-gray-800 dark:hover:border-brand-800 dark:hover:bg-brand-900/10"
             >
               <div>
-                <p className="font-semibold text-gray-900">{tournament.name}</p>
-                <p className="text-sm text-gray-500">
+                <p className="font-semibold text-gray-900 dark:text-gray-100">{tournament.name}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   {tournament.sport} · {tournament._count.teams}/{tournament.maxParticipants}{' '}
                   registered
                 </p>
               </div>
-              <span className="shrink-0 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700">
+              <span className="shrink-0 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700 dark:bg-brand-900/30 dark:text-brand-400">
                 {tournament.status}
               </span>
             </Link>

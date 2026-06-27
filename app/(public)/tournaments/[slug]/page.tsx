@@ -3,9 +3,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { auth } from '@/lib/auth';
 import { getTournamentBySlug } from '@/lib/tournaments';
-import { getTeamsForTournament } from '@/lib/teams';
+import { getTeamsForTournament, getUserTeamForTournament } from '@/lib/teams';
 import PublicBracketView from '@/components/bracket/PublicBracketView';
+import { PayEntryFeeButton } from '@/components/registration/PayEntryFeeButton';
 
 export async function generateMetadata({
   params,
@@ -43,6 +45,13 @@ export default async function TournamentDetailPage({
   const confirmedTeams = teams.filter((team) => team.status === 'CONFIRMED');
   const waitlistedCount = teams.filter((team) => team.status === 'WAITLISTED').length;
 
+  const session = await auth();
+  const myTeam = session?.user
+    ? await getUserTeamForTournament(tournament.id, session.user.id)
+    : null;
+  const needsPayment =
+    myTeam && tournament.requiresPayment && myTeam.paymentStatus !== 'PAID';
+
   const eventJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'SportsEvent',
@@ -66,39 +75,41 @@ export default async function TournamentDetailPage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(eventJsonLd) }}
       />
 
-      <h1 className="text-2xl font-bold text-brand-700">{tournament.name}</h1>
-      <p className="mt-1 text-sm text-gray-500">
+      <h1 className="text-2xl font-bold text-brand-700 dark:text-brand-400">{tournament.name}</h1>
+      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
         {tournament.sport} · Organized by {tournament.organizer.name}
       </p>
 
-      {tournament.description && <p className="mt-4 text-gray-700">{tournament.description}</p>}
+      {tournament.description && (
+        <p className="mt-4 text-gray-700 dark:text-gray-300">{tournament.description}</p>
+      )}
 
       <dl className="mt-6 grid grid-cols-2 gap-4 text-sm">
         <div>
-          <dt className="text-gray-500">Status</dt>
-          <dd className="font-medium text-gray-900">{tournament.status}</dd>
+          <dt className="text-gray-500 dark:text-gray-400">Status</dt>
+          <dd className="font-medium text-gray-900 dark:text-gray-100">{tournament.status}</dd>
         </div>
         <div>
-          <dt className="text-gray-500">Starts</dt>
-          <dd className="font-medium text-gray-900">
+          <dt className="text-gray-500 dark:text-gray-400">Starts</dt>
+          <dd className="font-medium text-gray-900 dark:text-gray-100">
             {new Date(tournament.startDate).toLocaleDateString()}
           </dd>
         </div>
         <div>
-          <dt className="text-gray-500">Participants</dt>
-          <dd className="font-medium text-gray-900">
+          <dt className="text-gray-500 dark:text-gray-400">Participants</dt>
+          <dd className="font-medium text-gray-900 dark:text-gray-100">
             {tournament._count.teams}/{tournament.maxParticipants}
           </dd>
         </div>
         {tournament.venue && (
           <div>
-            <dt className="text-gray-500">Venue</dt>
-            <dd className="font-medium text-gray-900">{tournament.venue}</dd>
+            <dt className="text-gray-500 dark:text-gray-400">Venue</dt>
+            <dd className="font-medium text-gray-900 dark:text-gray-100">{tournament.venue}</dd>
           </div>
         )}
       </dl>
 
-      {tournament.status === 'OPEN' && (
+      {tournament.status === 'OPEN' && !myTeam && (
         <div className="mt-6">
           <Link
             href={`/tournaments/${tournament.slug}/register`}
@@ -109,16 +120,28 @@ export default async function TournamentDetailPage({
         </div>
       )}
 
+      {needsPayment && myTeam && (
+        <div className="mt-6">
+          <PayEntryFeeButton
+            tournamentId={tournament.id}
+            teamId={myTeam.id}
+            entryFeeCents={tournament.entryFeeCents}
+          />
+        </div>
+      )}
+
       <div className="mt-10">
-        <h2 className="mb-3 text-lg font-semibold text-gray-900">Participants</h2>
+        <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">
+          Participants
+        </h2>
         {confirmedTeams.length === 0 ? (
-          <p className="text-sm text-gray-500">No confirmed participants yet.</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">No confirmed participants yet.</p>
         ) : (
           <ul className="grid gap-2 sm:grid-cols-2">
             {confirmedTeams.map((team) => (
               <li
                 key={team.id}
-                className="rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-900"
+                className="rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-900 dark:border-gray-800 dark:text-gray-100"
               >
                 {team.name}
               </li>
@@ -126,13 +149,17 @@ export default async function TournamentDetailPage({
           </ul>
         )}
         {waitlistedCount > 0 && (
-          <p className="mt-2 text-sm text-gray-500">{waitlistedCount} team(s) waitlisted</p>
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            {waitlistedCount} team(s) waitlisted
+          </p>
         )}
       </div>
 
       {tournament.bracket && (
         <div className="mt-10">
-          <h2 className="mb-3 text-lg font-semibold text-gray-900">Bracket &amp; Results</h2>
+          <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">
+            Bracket &amp; Results
+          </h2>
           <PublicBracketView
             tournamentId={tournament.id}
             isLive={tournament.status === 'IN_PROGRESS'}

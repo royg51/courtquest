@@ -49,7 +49,10 @@ export default function CreateTournamentForm() {
       <TextField label="Tournament name" error={errors.name?.message} {...register('name')} />
 
       <div>
-        <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="description"
+          className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
           Description (optional)
         </label>
         <textarea
@@ -57,11 +60,15 @@ export default function CreateTournamentForm() {
           rows={3}
           aria-invalid={!!errors.description}
           aria-describedby={errors.description ? 'description-error' : undefined}
-          className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+          className="mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/40 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
           {...register('description')}
         />
         {errors.description && (
-          <p id="description-error" role="alert" className="mt-1 text-sm text-red-600">
+          <p
+            id="description-error"
+            role="alert"
+            className="mt-1 text-sm text-red-600 dark:text-red-400"
+          >
             {errors.description.message}
           </p>
         )}
@@ -76,10 +83,19 @@ export default function CreateTournamentForm() {
         {...register('maxParticipants', { valueAsNumber: true })}
       />
 
+      <TextField
+        label="Entry fee in dollars (optional, leave blank for free)"
+        type="number"
+        min="0"
+        step="1"
+        error={errors.entryFeeDollars?.message}
+        {...register('entryFeeDollars', { valueAsNumber: true })}
+      />
+
       <button
         type="submit"
         disabled={submitting}
-        className="w-full rounded-md bg-brand-600 px-4 py-2 font-medium text-white transition-colors hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500/40 disabled:opacity-50"
+        className="w-full rounded-md bg-brand-600 px-4 py-2.5 font-medium text-white transition-colors hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500/40 disabled:opacity-50"
       >
         {submitting ? 'Creating…' : 'Create Tournament'}
       </button>

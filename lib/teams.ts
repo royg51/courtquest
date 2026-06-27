@@ -27,6 +27,12 @@ export async function getTeamsForTournament(
 
 export type TeamWithMembers = Awaited<ReturnType<typeof getTeamsForTournament>>[number];
 
+export async function getUserTeamForTournament(tournamentId: string, userId: string) {
+  return db.team.findFirst({
+    where: { tournamentId, status: { not: 'WITHDRAWN' }, members: { some: { userId } } },
+  });
+}
+
 export class RegistrationError extends Error {
   code: string;
   constructor(code: string, message: string) {

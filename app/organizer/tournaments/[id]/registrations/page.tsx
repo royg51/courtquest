@@ -24,7 +24,7 @@ export default async function RegistrationsPage({ params }: { params: { id: stri
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="mb-6 text-2xl font-bold text-brand-700">
+      <h1 className="mb-6 text-2xl font-bold text-brand-700 dark:text-brand-400">
         {tournament.name} — Registrations
       </h1>
       <RegistrationsTable tournamentId={tournament.id} />
