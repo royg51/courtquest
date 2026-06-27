@@ -13,12 +13,14 @@ export async function listTournaments(filters?: {
   status?: string;
   sport?: string;
   isPublic?: boolean;
+  organizerId?: string;
 }) {
   return db.tournament.findMany({
     where: {
       ...(filters?.status ? { status: filters.status } : {}),
       ...(filters?.sport ? { sport: filters.sport } : {}),
       ...(filters?.isPublic !== undefined ? { isPublic: filters.isPublic } : {}),
+      ...(filters?.organizerId ? { organizerId: filters.organizerId } : {}),
     },
     orderBy: { startDate: 'asc' },
     include: { _count: { select: { teams: true } } },
@@ -33,14 +35,21 @@ export const getTournamentBySlug = cache(async (slug: string) => {
     include: {
       organizer: { select: { id: true, name: true } },
       _count: { select: { teams: true } },
+      bracket: { select: { id: true } },
     },
   });
 });
 
-export async function getTournamentById(_id: string) {
-  // TODO: implement
-  throw new Error('Not implemented');
-}
+export const getTournamentById = cache(async (id: string) => {
+  return db.tournament.findUnique({
+    where: { id },
+    include: {
+      organizer: { select: { id: true, name: true } },
+      _count: { select: { teams: true } },
+      bracket: { select: { id: true } },
+    },
+  });
+});
 
 function slugify(name: string): string {
   return name
@@ -104,14 +113,12 @@ export async function createTournament(
 }
 
 export async function updateTournament(
-  _id: string,
-  _data: Partial<Parameters<typeof createTournament>[1]>
+  id: string,
+  data: Partial<Parameters<typeof createTournament>[1]> & { status?: string }
 ) {
-  // TODO: implement
-  throw new Error('Not implemented');
+  return db.tournament.update({ where: { id }, data });
 }
 
-export async function deleteTournament(_id: string) {
-  // TODO: implement
-  throw new Error('Not implemented');
+export async function deleteTournament(id: string) {
+  return db.tournament.delete({ where: { id } });
 }
