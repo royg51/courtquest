@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Toaster } from 'sonner';
 import { AuthSessionProvider } from '@/components/providers/SessionProvider';
 import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 import './globals.css';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
@@ -47,8 +48,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <AuthSessionProvider>
           {/* TanStack Query provider will wrap children here */}
-          <Navbar />
-          {children}
+          <div className="flex min-h-screen flex-col">
+            <Navbar />
+            <div className="flex-1">{children}</div>
+            <Footer />
+          </div>
         </AuthSessionProvider>
         <Toaster richColors position="top-right" />
       </body>

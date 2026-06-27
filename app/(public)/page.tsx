@@ -1,10 +1,9 @@
 // Home page — public, server component.
-// Full landing page: hero, features, footer. Auth-aware CTA via auth().
+// Hero + features. Footer is global (components/layout/Footer.tsx via app/layout.tsx).
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Trophy, Network, Activity } from 'lucide-react';
-import { InstagramIcon, FacebookIcon } from '@/components/icons/SocialIcons';
+import { Trophy, Network, Activity, ArrowRight } from 'lucide-react';
 import { auth } from '@/lib/auth';
 
 const FEATURES = [
@@ -22,19 +21,6 @@ const FEATURES = [
     icon: Activity,
     title: 'Live Results',
     description: 'Scores and standings update in real time as matches finish.',
-  },
-];
-
-const SOCIAL_LINKS = [
-  {
-    icon: InstagramIcon,
-    label: 'CourtQuest on Instagram',
-    href: 'https://www.instagram.com/court_quest/',
-  },
-  {
-    icon: FacebookIcon,
-    label: 'CourtQuest on Facebook',
-    href: 'https://www.facebook.com/profile.php?id=61578623644938',
   },
 ];
 
@@ -66,15 +52,16 @@ export default async function HomePage() {
         <div className="flex flex-wrap items-center justify-center gap-3">
           <Link
             href="/tournaments"
-            className="rounded-md bg-brand-600 px-5 py-2.5 font-medium text-white hover:bg-brand-700"
+            className="group flex items-center gap-1.5 rounded-md bg-brand-600 px-5 py-2.5 font-medium text-white transition-colors hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
           >
             Browse Tournaments
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
           </Link>
 
           {isLoggedIn ? (
             <Link
               href="/dashboard"
-              className="rounded-md border border-brand-600 px-5 py-2.5 font-medium text-brand-700 hover:bg-brand-50"
+              className="rounded-md border border-brand-600 px-5 py-2.5 font-medium text-brand-700 transition-colors hover:bg-brand-50 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
             >
               Go to Dashboard
             </Link>
@@ -82,13 +69,13 @@ export default async function HomePage() {
             <>
               <Link
                 href="/login"
-                className="rounded-md border border-gray-300 px-5 py-2.5 font-medium text-gray-700 hover:bg-gray-100"
+                className="rounded-md border border-gray-300 px-5 py-2.5 font-medium text-gray-700 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
               >
                 Login
               </Link>
               <Link
                 href="/signup"
-                className="rounded-md border border-gray-300 px-5 py-2.5 font-medium text-gray-700 hover:bg-gray-100"
+                className="rounded-md border border-gray-300 px-5 py-2.5 font-medium text-gray-700 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
               >
                 Sign Up
               </Link>
@@ -98,10 +85,13 @@ export default async function HomePage() {
       </section>
 
       <section className="border-t border-gray-200 bg-white px-4 py-16 sm:py-20">
-        <div className="mx-auto grid max-w-4xl gap-10 sm:grid-cols-3">
+        <div className="mx-auto grid max-w-4xl gap-6 sm:grid-cols-3">
           {FEATURES.map(({ icon: Icon, title, description }) => (
-            <div key={title} className="text-center">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-brand-50 text-brand-600">
+            <div
+              key={title}
+              className="group rounded-lg border border-gray-200 p-6 text-center transition-colors hover:border-brand-200 hover:bg-brand-50/30"
+            >
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-brand-50 text-brand-600 transition-transform group-hover:scale-105">
                 <Icon className="h-6 w-6" />
               </div>
               <h2 className="mt-4 font-semibold text-gray-900">{title}</h2>
@@ -110,37 +100,6 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
-
-      <footer className="border-t border-gray-200 px-4 py-10 text-center text-sm text-gray-500">
-        <div className="flex justify-center gap-4">
-          {SOCIAL_LINKS.map(({ icon: Icon, label, href }) => (
-            <a
-              key={label}
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={label}
-              className="text-gray-400 hover:text-brand-700"
-            >
-              <Icon className="h-5 w-5" />
-            </a>
-          ))}
-        </div>
-
-        <p className="mt-4">© {new Date().getFullYear()} CourtQuest</p>
-
-        <div className="mt-2 flex justify-center gap-4">
-          <Link href="/tournaments" className="hover:text-brand-700">
-            Tournaments
-          </Link>
-          <Link href="/login" className="hover:text-brand-700">
-            Login
-          </Link>
-          <Link href="/signup" className="hover:text-brand-700">
-            Sign Up
-          </Link>
-        </div>
-      </footer>
     </main>
   );
 }
