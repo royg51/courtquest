@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import { createTournamentSchema, type CreateTournamentInput } from '@/lib/schemas/tournament';
+import { TextField } from '@/components/ui/TextField';
 
 export default function CreateTournamentForm() {
   const router = useRouter();
@@ -45,18 +46,7 @@ export default function CreateTournamentForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="mx-auto max-w-md space-y-4 px-4 py-8">
-      <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-          Tournament name
-        </label>
-        <input
-          id="name"
-          type="text"
-          {...register('name')}
-          className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2"
-        />
-        {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>}
-      </div>
+      <TextField label="Tournament name" error={errors.name?.message} {...register('name')} />
 
       <div>
         <label htmlFor="description" className="block text-sm font-medium text-gray-700">
@@ -65,46 +55,31 @@ export default function CreateTournamentForm() {
         <textarea
           id="description"
           rows={3}
+          aria-invalid={!!errors.description}
+          aria-describedby={errors.description ? 'description-error' : undefined}
+          className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
           {...register('description')}
-          className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2"
         />
         {errors.description && (
-          <p className="mt-1 text-sm text-red-600">{errors.description.message}</p>
+          <p id="description-error" role="alert" className="mt-1 text-sm text-red-600">
+            {errors.description.message}
+          </p>
         )}
       </div>
 
-      <div>
-        <label htmlFor="sport" className="block text-sm font-medium text-gray-700">
-          Sport
-        </label>
-        <input
-          id="sport"
-          type="text"
-          {...register('sport')}
-          className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2"
-        />
-        {errors.sport && <p className="mt-1 text-sm text-red-600">{errors.sport.message}</p>}
-      </div>
+      <TextField label="Sport" error={errors.sport?.message} {...register('sport')} />
 
-      <div>
-        <label htmlFor="maxParticipants" className="block text-sm font-medium text-gray-700">
-          Max participants
-        </label>
-        <input
-          id="maxParticipants"
-          type="number"
-          {...register('maxParticipants', { valueAsNumber: true })}
-          className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2"
-        />
-        {errors.maxParticipants && (
-          <p className="mt-1 text-sm text-red-600">{errors.maxParticipants.message}</p>
-        )}
-      </div>
+      <TextField
+        label="Max participants"
+        type="number"
+        error={errors.maxParticipants?.message}
+        {...register('maxParticipants', { valueAsNumber: true })}
+      />
 
       <button
         type="submit"
         disabled={submitting}
-        className="w-full rounded-md bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+        className="w-full rounded-md bg-brand-600 px-4 py-2 font-medium text-white transition-colors hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500/40 disabled:opacity-50"
       >
         {submitting ? 'Creating…' : 'Create Tournament'}
       </button>
