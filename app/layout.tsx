@@ -3,6 +3,7 @@ import { AuthSessionProvider } from '@/components/providers/SessionProvider';
 import { QueryProvider } from '@/components/providers/QueryProvider';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import { ThemedToaster } from '@/components/providers/ThemedToaster';
+import { ChunkErrorRecovery } from '@/components/providers/ChunkErrorRecovery';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import './globals.css';
@@ -80,6 +81,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
         />
+        <ChunkErrorRecovery />
         <ThemeProvider>
           <AuthSessionProvider>
             <QueryProvider>
