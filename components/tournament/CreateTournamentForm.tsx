@@ -95,7 +95,7 @@ export default function CreateTournamentForm() {
       <button
         type="submit"
         disabled={submitting}
-        className="w-full rounded-md bg-brand-600 px-4 py-2 font-medium text-white transition-colors hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500/40 disabled:opacity-50"
+        className="w-full rounded-md bg-brand-600 px-4 py-2.5 font-medium text-white transition-colors hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500/40 disabled:opacity-50"
       >
         {submitting ? 'Creating…' : 'Create Tournament'}
       </button>

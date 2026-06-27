@@ -22,7 +22,7 @@ interface Props {
 
 export default function TournamentCard({ tournament, registeredCount }: Props) {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4 transition hover:border-brand-500 hover:shadow-sm dark:border-gray-800 dark:bg-gray-900 dark:hover:border-brand-500">
+    <div className="rounded-lg border border-gray-200 bg-white p-4 transition-colors hover:border-brand-200 hover:bg-brand-50/30 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-brand-800 dark:hover:bg-brand-900/10">
       <div className="flex items-center justify-between gap-2">
         <h2 className="font-semibold text-gray-900 dark:text-gray-100">{tournament.name}</h2>
         <span className="shrink-0 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700 dark:bg-brand-900/30 dark:text-brand-400">

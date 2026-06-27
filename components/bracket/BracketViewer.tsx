@@ -33,8 +33,14 @@ export default function BracketViewer({ bracket, mode = 'public', onScoreSubmit 
   if (firstRoundCount === 0) return null;
 
   return (
-    <div className="overflow-x-auto pb-4">
-      <div className="flex items-start" style={{ minWidth: 'fit-content' }}>
+    <div>
+      {bracket.rounds.length > 1 && (
+        <p className="mb-2 text-xs text-gray-400 dark:text-gray-500 sm:hidden">
+          Scroll sideways to see the full bracket →
+        </p>
+      )}
+      <div className="overflow-x-auto pb-4">
+        <div className="flex items-start" style={{ minWidth: 'fit-content' }}>
         {bracket.rounds.map((round, roundIndex) => {
           const span = firstRoundCount / round.matches.length;
           const isLastRound = roundIndex === bracket.rounds.length - 1;
@@ -105,6 +111,7 @@ export default function BracketViewer({ bracket, mode = 'public', onScoreSubmit 
             </div>
           );
         })}
+        </div>
       </div>
     </div>
   );
