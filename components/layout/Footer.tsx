@@ -36,9 +36,8 @@ export default function Footer() {
               CourtQuest
             </Link>
             <p className="mt-3 max-w-sm leading-relaxed text-gray-500">
-              CourtQuest helps organizers run pickleball tournaments that bring communities
-              together — making it easy to create events, track brackets, and grow the game at
-              the grassroots level.
+              A 501(c)(3) nonprofit dedicated to growing community sports while making a positive
+              impact on local communities.
             </p>
             <div className="mt-4 flex gap-4">
               {SOCIAL_LINKS.map(({ icon: Icon, label, href }) => (
@@ -101,7 +100,7 @@ export default function Footer() {
 
         <div className="mt-10 flex flex-col items-center gap-2 border-t border-gray-100 pt-6 text-center text-xs text-gray-400 sm:flex-row sm:justify-between">
           <p>© {new Date().getFullYear()} CourtQuest. All rights reserved.</p>
-          <p>Made with ❤️ for youth sports.</p>
+          <p>Made with a passion for youth sports.</p>
         </div>
       </div>
     </footer>
