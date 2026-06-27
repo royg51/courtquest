@@ -5,8 +5,14 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSession } from 'next-auth/react';
-import { Mail } from 'lucide-react';
+import { Mail, MapPin } from 'lucide-react';
 import { InstagramIcon, FacebookIcon } from '@/components/icons/SocialIcons';
+
+const VENUE_NAME = 'Worldgate Center';
+const VENUE_ADDRESS = '13025 Worldgate Dr, Herndon, VA 20170';
+const VENUE_URL = 'https://www.worldgatecentre.com';
+const VENUE_MAP_EMBED =
+  'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d49640.57380193009!2d-77.47735965136718!3d38.9574305!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89b647f2ac612663%3A0xbe2137f229b5b44f!2sWorldgate%20Centre!5e0!3m2!1sen!2sus!4v1782540359706!5m2!1sen!2sus';
 
 const SOCIAL_LINKS = [
   {
@@ -94,7 +100,33 @@ export default function Footer() {
                   {CONTACT_EMAIL}
                 </a>
               </li>
+              <li>
+                <a
+                  href={VENUE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-start gap-1.5 transition-colors hover:text-brand-700"
+                >
+                  <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>
+                    {VENUE_NAME}
+                    <br />
+                    {VENUE_ADDRESS}
+                  </span>
+                </a>
+              </li>
             </ul>
+            <iframe
+              src={VENUE_MAP_EMBED}
+              title={`Map of ${VENUE_NAME}`}
+              width="100%"
+              height={160}
+              style={{ border: 0 }}
+              loading="lazy"
+              allowFullScreen
+              referrerPolicy="strict-origin-when-cross-origin"
+              className="mt-3 w-full rounded-md border border-gray-200"
+            />
           </div>
         </div>
 
