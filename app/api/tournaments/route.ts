@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth, requireRole } from '@/lib/auth';
 import { createTournament, listTournaments } from '@/lib/tournaments';
 import { createTournamentSchema } from '@/lib/schemas/tournament';
+import { checkRateLimit, rateLimitResponse, RATE_LIMIT_CONFIG } from '@/lib/rate-limit';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -25,6 +26,13 @@ export async function POST(request: NextRequest) {
   if (!session?.user || !requireRole(session, 'ORGANIZER')) {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
+
+  const { success, reset } = await checkRateLimit(
+    'tournamentCreate',
+    session.user.id,
+    RATE_LIMIT_CONFIG.tournamentCreate
+  );
+  if (!success) return rateLimitResponse(reset);
 
   let body: unknown;
   try {

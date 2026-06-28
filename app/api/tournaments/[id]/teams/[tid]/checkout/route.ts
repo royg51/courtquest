@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { createRegistrationCheckoutSession, isStripeConfigured } from '@/lib/payments';
+import { checkRateLimit, rateLimitResponse, RATE_LIMIT_CONFIG } from '@/lib/rate-limit';
 
 export async function POST(
   _request: NextRequest,
@@ -15,6 +16,13 @@ export async function POST(
   if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
   }
+
+  const { success, reset } = await checkRateLimit(
+    'checkout',
+    session.user.id,
+    RATE_LIMIT_CONFIG.checkout
+  );
+  if (!success) return rateLimitResponse(reset);
 
   if (!isStripeConfigured()) {
     return NextResponse.json(

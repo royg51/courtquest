@@ -5,8 +5,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createDonationCheckoutSession, isStripeConfigured } from '@/lib/payments';
 import { donationCheckoutSchema } from '@/lib/schemas/donation';
+import { checkRateLimit, getClientIp, rateLimitResponse, RATE_LIMIT_CONFIG } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request);
+  const { success, reset } = await checkRateLimit('checkout', ip, RATE_LIMIT_CONFIG.checkout);
+  if (!success) return rateLimitResponse(reset);
+
   if (!isStripeConfigured()) {
     return NextResponse.json(
       { error: 'Payments are not configured yet', code: 'STRIPE_NOT_CONFIGURED' },

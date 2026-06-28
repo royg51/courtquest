@@ -6,6 +6,7 @@ import { auth, requireRole } from '@/lib/auth';
 import { getTournamentById } from '@/lib/tournaments';
 import { getTeamsForTournament, registerTeam, RegistrationError } from '@/lib/teams';
 import { registerTeamSchema } from '@/lib/schemas/team';
+import { checkRateLimit, rateLimitResponse, RATE_LIMIT_CONFIG } from '@/lib/rate-limit';
 
 export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth();
@@ -28,6 +29,13 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
   }
+
+  const { success, reset } = await checkRateLimit(
+    'registration',
+    session.user.id,
+    RATE_LIMIT_CONFIG.registration
+  );
+  if (!success) return rateLimitResponse(reset);
 
   let body: unknown;
   try {

@@ -2,8 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { db } from '@/lib/db';
 import { signupSchema } from '@/lib/schemas/auth';
+import { checkRateLimit, getClientIp, rateLimitResponse, RATE_LIMIT_CONFIG } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request);
+  const { success, reset } = await checkRateLimit('signup', ip, RATE_LIMIT_CONFIG.signup);
+  if (!success) return rateLimitResponse(reset);
+
   let body: unknown;
   try {
     body = await request.json();
