@@ -7,7 +7,10 @@
 //   Step 4 — createTournament, updateTournament, deleteTournament
 
 import { cache } from 'react';
+import { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
+import { teamSizeForEntryType } from '@/lib/sports';
+import type { CreateTournamentInput, UpdateTournamentInput } from '@/lib/schemas/tournament';
 
 export async function listTournaments(filters?: {
   status?: string | string[];
@@ -79,49 +82,64 @@ async function generateUniqueSlug(name: string): Promise<string> {
 
 export async function createTournament(
   organizerId: string,
-  data: {
-    name: string;
-    description?: string;
-    sport?: string;
-    format: string;
-    startDate: Date;
-    endDate: Date;
-    registrationDeadline: Date;
-    maxParticipants: number;
-    teamSize: number;
-    entryFeeCents?: number;
-    requiresPayment?: boolean;
-    venue?: string;
-    address?: string;
-  }
+  input: CreateTournamentInput
 ) {
-  const slug = await generateUniqueSlug(data.name);
+  const slug = await generateUniqueSlug(input.name);
+  const entryFeeCents = Math.round((input.entryFeeDollars ?? 0) * 100);
 
   return db.tournament.create({
     data: {
       organizerId,
       slug,
-      name: data.name,
-      description: data.description,
-      sport: data.sport,
-      format: data.format,
-      startDate: data.startDate,
-      endDate: data.endDate,
-      registrationDeadline: data.registrationDeadline,
-      maxParticipants: data.maxParticipants,
-      teamSize: data.teamSize,
-      entryFeeCents: data.entryFeeCents,
-      requiresPayment: data.requiresPayment,
-      venue: data.venue,
-      address: data.address,
+      name: input.name,
+      description: input.description,
+      sport: input.sport,
+      format: input.format,
+      entryType: input.entryType,
+      teamSize: teamSizeForEntryType(input.entryType),
+      numberOfCourts: input.numberOfCourts,
+      maxParticipants: input.maxParticipants,
+      startDate: input.startDate,
+      endDate: input.endDate,
+      registrationDeadline: input.registrationDeadline,
+      entryFeeCents,
+      requiresPayment: entryFeeCents > 0,
+      venue: input.venue,
+      address: input.address,
     },
   });
 }
 
-export async function updateTournament(
-  id: string,
-  data: Partial<Parameters<typeof createTournament>[1]> & { status?: string }
-) {
+// Maps the (already-validated) update input to a Prisma update payload,
+// applying the same derived conversions as create: entryFeeDollars → cents
+// (+ requiresPayment), entryType → teamSize. Only fields actually present in
+// the input are written, so a partial edit leaves everything else untouched.
+export async function updateTournament(id: string, input: UpdateTournamentInput) {
+  const data: Prisma.TournamentUpdateInput = {};
+
+  if (input.name !== undefined) data.name = input.name;
+  if (input.description !== undefined) data.description = input.description;
+  if (input.sport !== undefined) data.sport = input.sport;
+  if (input.format !== undefined) data.format = input.format;
+  if (input.maxParticipants !== undefined) data.maxParticipants = input.maxParticipants;
+  if (input.numberOfCourts !== undefined) data.numberOfCourts = input.numberOfCourts;
+  if (input.startDate !== undefined) data.startDate = input.startDate;
+  if (input.endDate !== undefined) data.endDate = input.endDate;
+  if (input.registrationDeadline !== undefined) data.registrationDeadline = input.registrationDeadline;
+  if (input.venue !== undefined) data.venue = input.venue;
+  if (input.address !== undefined) data.address = input.address;
+  if (input.status !== undefined) data.status = input.status;
+
+  if (input.entryType !== undefined) {
+    data.entryType = input.entryType;
+    data.teamSize = teamSizeForEntryType(input.entryType);
+  }
+  if (input.entryFeeDollars !== undefined) {
+    const cents = Math.round(input.entryFeeDollars * 100);
+    data.entryFeeCents = cents;
+    data.requiresPayment = cents > 0;
+  }
+
   return db.tournament.update({ where: { id }, data });
 }
 

@@ -7,6 +7,7 @@ import { auth, requireRole } from '@/lib/auth';
 import { getTournamentById } from '@/lib/tournaments';
 import { generateSingleEliminationBracket, BracketError } from '@/lib/bracket';
 import { recordAudit } from '@/lib/audit';
+import { isFormatImplemented } from '@/lib/sports';
 
 export async function POST(_request: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth();
@@ -22,6 +23,19 @@ export async function POST(_request: NextRequest, { params }: { params: { id: st
   const isOwner = tournament.organizerId === session?.user?.id;
   if (!isOwner && !requireRole(session, 'ADMIN')) {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
+  }
+
+  // The bracket engine only implements single elimination today. Reject any
+  // other (selectable-but-not-yet-built) format explicitly rather than
+  // silently generating the wrong bracket. Other engines land in Phase 6.
+  if (tournament.format !== 'SINGLE_ELIM' || !isFormatImplemented(tournament.format)) {
+    return NextResponse.json(
+      {
+        error: `Bracket generation for "${tournament.format}" isn't available yet — only Single Elimination is supported right now.`,
+        code: 'FORMAT_NOT_IMPLEMENTED',
+      },
+      { status: 422 }
+    );
   }
 
   try {

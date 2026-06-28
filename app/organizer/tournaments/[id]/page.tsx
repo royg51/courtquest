@@ -8,6 +8,7 @@ import { getTournamentById, getTournamentRevenue } from '@/lib/tournaments';
 import { CopyLinkButton } from '@/components/organizer/CopyLinkButton';
 import { GenerateBracketButton } from '@/components/organizer/GenerateBracketButton';
 import { UpdateStatusButton } from '@/components/organizer/UpdateStatusButton';
+import { FORMATS } from '@/lib/sports';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
 
@@ -50,7 +51,7 @@ export default async function OrganizerTournamentPage({
         <CopyLinkButton url={publicUrl} />
       </div>
 
-      <dl className={`mt-6 grid gap-4 text-sm ${tournament.requiresPayment ? 'grid-cols-3' : 'grid-cols-2'}`}>
+      <dl className="mt-6 grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
         <div>
           <dt className="text-gray-500 dark:text-gray-400">Registered</dt>
           <dd className="font-medium text-gray-900 dark:text-gray-100">
@@ -58,9 +59,25 @@ export default async function OrganizerTournamentPage({
           </dd>
         </div>
         <div>
+          <dt className="text-gray-500 dark:text-gray-400">Sport</dt>
+          <dd className="font-medium text-gray-900 dark:text-gray-100">{tournament.sport}</dd>
+        </div>
+        <div>
+          <dt className="text-gray-500 dark:text-gray-400">Format</dt>
+          <dd className="font-medium text-gray-900 dark:text-gray-100">
+            {FORMATS.find((f) => f.value === tournament.format)?.label ?? tournament.format}
+          </dd>
+        </div>
+        <div>
           <dt className="text-gray-500 dark:text-gray-400">Starts</dt>
           <dd className="font-medium text-gray-900 dark:text-gray-100">
             {new Date(tournament.startDate).toLocaleDateString()}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-gray-500 dark:text-gray-400">Courts</dt>
+          <dd className="font-medium text-gray-900 dark:text-gray-100">
+            {tournament.numberOfCourts}
           </dd>
         </div>
         {revenue && (
@@ -91,6 +108,13 @@ export default async function OrganizerTournamentPage({
             label="Close Registration"
           />
         )}
+
+        <Link
+          href={`/organizer/tournaments/${tournament.id}/edit`}
+          className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500/40 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+        >
+          Edit Details
+        </Link>
 
         <Link
           href={`/organizer/tournaments/${tournament.id}/registrations`}

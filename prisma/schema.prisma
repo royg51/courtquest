@@ -102,6 +102,11 @@ model Tournament {
   maxParticipants      Int
   minParticipants      Int        @default(4)
   teamSize             Int        @default(1)
+  // entryType: SOLO | TEAM — drives teamSize (1 vs 2). Stored explicitly so
+  // the create/edit UI and registration flow can branch on intent rather
+  // than inferring it from teamSize.
+  entryType            String     @default("SOLO")
+  numberOfCourts       Int        @default(1)
   entryFeeCents        Int        @default(0)
   requiresPayment      Boolean    @default(false)
   venue                String?
