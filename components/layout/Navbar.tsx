@@ -15,11 +15,16 @@ const NAV_LINKS = [
   { href: '/events', label: 'Events' },
   { href: '/about', label: 'About' },
   { href: '/donate', label: 'Donate' },
-  { href: '/organizer', label: 'Organizer' },
 ];
 
 export default function Navbar() {
-  const { status } = useSession();
+  const { data: session, status } = useSession();
+  // /organizer itself redirects PLAYER-role accounts straight back to
+  // /dashboard with no explanation — showing this link to everyone made
+  // that look like a dead click for non-organizers. Only show it to
+  // accounts that can actually use it.
+  const canSeeOrganizerLink =
+    session?.user?.role === 'ORGANIZER' || session?.user?.role === 'ADMIN';
   const [isOpen, setIsOpen] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
 
@@ -81,6 +86,11 @@ export default function Navbar() {
               {link.label}
             </Link>
           ))}
+          {canSeeOrganizerLink && (
+            <Link href="/organizer" className={linkClass}>
+              Organizer
+            </Link>
+          )}
 
           {status === 'authenticated' && (
             <>
@@ -165,6 +175,11 @@ export default function Navbar() {
               {link.label}
             </Link>
           ))}
+          {canSeeOrganizerLink && (
+            <Link href="/organizer" onClick={close} className={drawerLinkClass}>
+              Organizer
+            </Link>
+          )}
 
           {status === 'authenticated' && (
             <>

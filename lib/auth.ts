@@ -8,6 +8,13 @@ import type { Role } from '@/types';
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(db),
+  // The app is reachable from multiple hostnames (Vercel preview/prod
+  // domains + the custom domain) and AUTH_URL can only name one of them as
+  // canonical. Without trustHost, Auth.js rejects any request whose Host
+  // header doesn't match AUTH_URL — trustHost: true tells it to trust
+  // Vercel's X-Forwarded-Host instead, so OAuth callbacks and redirects work
+  // correctly regardless of which domain a visitor actually used.
+  trustHost: true,
   pages: {
     signIn: '/login',
   },

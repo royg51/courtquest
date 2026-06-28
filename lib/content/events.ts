@@ -38,7 +38,10 @@ export const PAST_EVENTS: PastEvent[] = [
     status: 'Completed Successfully',
     venue: 'Worldgate Center',
     location: 'Herndon, Virginia',
-    stats: [{ label: 'Raised', value: '$1,600+' }],
+    stats: [
+      { label: 'Participants', value: '40' },
+      { label: 'Raised', value: '$1,600+' },
+    ],
     photoAlbumUrl: undefined,
   },
 ];
