@@ -1,12 +1,49 @@
 const { PHASE_DEVELOPMENT_SERVER } = require('next/constants');
 const { withSentryConfig } = require('@sentry/nextjs');
 
+// CSP allowances, one line per third party actually wired up (verified via
+// grep, not guessed) — keep this list in sync with what the app actually
+// loads:
+//   - plausible.io: analytics script (components/providers/Analytics.tsx)
+//   - *.supabase.co (https + wss): browser realtime client for live donation
+//     updates (lib/supabase-client.ts)
+//   - *.sentry.io / *.ingest.sentry.io: error event reporting
+//   - www.google.com: Google Maps venue embed (components/layout/Footer.tsx)
+// 'unsafe-inline' on script-src is required for Next.js's own hydration
+// bootstrap script and the JSON-LD blocks in app/layout.tsx — a nonce-based
+// strict CSP would remove it but needs per-request middleware wiring and
+// careful testing against App Router hydration; out of scope here.
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' https://plausible.io",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob:",
+  "font-src 'self' data:",
+  "connect-src 'self' https://plausible.io https://*.supabase.co wss://*.supabase.co https://*.sentry.io https://*.ingest.sentry.io",
+  "frame-src 'self' https://www.google.com",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+].join('; ');
+
+const SECURITY_HEADERS = [
+  { key: 'Content-Security-Policy', value: CSP },
+  { key: 'X-Frame-Options', value: 'DENY' },
+  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+  { key: 'X-Content-Type-Options', value: 'nosniff' },
+  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()' },
+];
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: '**.googleusercontent.com' },
     ],
+  },
+  async headers() {
+    return [{ source: '/(.*)', headers: SECURITY_HEADERS }];
   },
 };
 
