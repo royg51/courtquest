@@ -36,6 +36,8 @@ const baseTournamentFields = {
   registrationDeadline: dateField,
   venue: z.string().max(200).optional(),
   address: z.string().max(300).optional(),
+  // Checkbox: react-hook-form sends a boolean; default to false when absent.
+  allowGuestRegistration: z.coerce.boolean().optional().default(false),
 };
 
 export const createTournamentSchema = z
@@ -68,6 +70,7 @@ export const updateTournamentSchema = z.object({
   registrationDeadline: dateField.optional(),
   venue: z.string().max(200).optional(),
   address: z.string().max(300).optional(),
+  allowGuestRegistration: z.coerce.boolean().optional(),
   status: z.enum(['DRAFT', 'OPEN', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']).optional(),
 });
 

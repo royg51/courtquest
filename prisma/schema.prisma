@@ -112,6 +112,11 @@ model Tournament {
   venue                String?
   address              String?
   isPublic             Boolean    @default(true)
+  // When true, people without an account can register (guest registration).
+  // inviteCode is a short shareable "join with code" token; nullable until an
+  // organizer generates one, unique so a code maps to exactly one tournament.
+  allowGuestRegistration Boolean  @default(false)
+  inviteCode           String?    @unique
   teams                Team[]
   bracket              Bracket?
   donations            Donation[]

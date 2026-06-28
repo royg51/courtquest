@@ -4,9 +4,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth, requireRole } from '@/lib/auth';
 import { getTournamentById } from '@/lib/tournaments';
-import { getTeamsForTournament, registerTeam, RegistrationError } from '@/lib/teams';
-import { registerTeamSchema } from '@/lib/schemas/team';
-import { checkRateLimit, rateLimitResponse, RATE_LIMIT_CONFIG } from '@/lib/rate-limit';
+import { getTeamsForTournament, registerTeam, RegistrationError, type PrimaryRegistrant } from '@/lib/teams';
+import { registerTeamSchema, guestRegisterTeamSchema } from '@/lib/schemas/team';
+import { checkRateLimit, getClientIp, rateLimitResponse, RATE_LIMIT_CONFIG } from '@/lib/rate-limit';
 import { db } from '@/lib/db';
 import { sendRegistrationConfirmation, sendOrganizerNewRegistrationNotification } from '@/lib/email';
 
@@ -28,15 +28,24 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
+  const tournament = await getTournamentById(params.id);
+  if (!tournament) {
+    return NextResponse.json({ error: 'Not found', code: 'NOT_FOUND' }, { status: 404 });
   }
 
-  const { success, reset } = await checkRateLimit(
-    'registration',
-    session.user.id,
-    RATE_LIMIT_CONFIG.registration
-  );
+  // Two paths: a logged-in user, or a guest when the tournament explicitly
+  // allows guest registration. Anything else is unauthorized.
+  const isGuest = !session?.user;
+  if (isGuest && !tournament.allowGuestRegistration) {
+    return NextResponse.json(
+      { error: 'Sign in to register for this tournament', code: 'UNAUTHORIZED' },
+      { status: 401 }
+    );
+  }
+
+  // Rate limit by user id when logged in, by IP for guests.
+  const rateKey = session?.user?.id ?? getClientIp(request);
+  const { success, reset } = await checkRateLimit('registration', rateKey, RATE_LIMIT_CONFIG.registration);
   if (!success) return rateLimitResponse(reset);
 
   let body: unknown;
@@ -46,7 +55,9 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     return NextResponse.json({ error: 'Invalid JSON', code: 'BAD_REQUEST' }, { status: 400 });
   }
 
-  const parsed = registerTeamSchema.safeParse(body);
+  const parsed = isGuest
+    ? guestRegisterTeamSchema.safeParse(body)
+    : registerTeamSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { error: 'Validation failed', code: 'VALIDATION_ERROR', issues: parsed.error.issues },
@@ -54,37 +65,59 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     );
   }
 
+  // Build the primary registrant + who the confirmation email goes to.
+  let primary: PrimaryRegistrant;
+  let registrantName: string;
+  let registrantEmail: string | null;
+  if (isGuest) {
+    const g = (parsed.data as import('@/lib/schemas/team').GuestRegisterTeamInput).guestPrimary;
+    const email = g.guestEmail && g.guestEmail !== '' ? g.guestEmail : undefined;
+    primary = { guestName: g.guestName, guestEmail: email, guestPhone: g.guestPhone };
+    registrantName = g.guestName;
+    registrantEmail = email ?? null;
+  } else {
+    primary = { userId: session!.user.id };
+    registrantName = session!.user.name ?? 'Player';
+    registrantEmail = session!.user.email ?? null;
+  }
+
   try {
+    const { guestPrimary: _omit, ...teamFields } = parsed.data as Record<string, unknown>;
+    void _omit;
     const team = await registerTeam(params.id, {
-      primaryUserId: session.user.id,
-      ...parsed.data,
+      primary,
+      teamName: teamFields.teamName as string,
+      skillLevel: teamFields.skillLevel as string,
+      waiverAccepted: teamFields.waiverAccepted as boolean,
+      partner: teamFields.partner as
+        | { guestName?: string; guestEmail?: string; guestPhone?: string }
+        | undefined,
     });
 
-    const tournament = await getTournamentById(params.id);
-    if (tournament && session.user.email && session.user.name) {
+    if (registrantEmail) {
       await sendRegistrationConfirmation({
-        to: session.user.email,
-        name: session.user.name,
+        to: registrantEmail,
+        name: registrantName,
         tournamentName: tournament.name,
         tournamentSlug: tournament.slug,
         teamName: team.name,
       });
+    }
 
-      const organizer = await db.user.findUnique({
-        where: { id: tournament.organizerId },
-        select: { email: true, name: true },
+    const organizer = await db.user.findUnique({
+      where: { id: tournament.organizerId },
+      select: { email: true, name: true },
+    });
+    if (organizer?.email) {
+      await sendOrganizerNewRegistrationNotification({
+        to: organizer.email,
+        organizerName: organizer.name,
+        tournamentName: tournament.name,
+        tournamentId: tournament.id,
+        teamName: team.name,
+        playerName: registrantName,
+        paid: !tournament.requiresPayment,
       });
-      if (organizer?.email) {
-        await sendOrganizerNewRegistrationNotification({
-          to: organizer.email,
-          organizerName: organizer.name,
-          tournamentName: tournament.name,
-          tournamentId: tournament.id,
-          teamName: team.name,
-          playerName: session.user.name,
-          paid: !tournament.requiresPayment,
-        });
-      }
     }
 
     return NextResponse.json({ team }, { status: 201 });

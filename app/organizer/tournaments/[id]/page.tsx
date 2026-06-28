@@ -8,6 +8,7 @@ import { getTournamentById, getTournamentRevenue } from '@/lib/tournaments';
 import { CopyLinkButton } from '@/components/organizer/CopyLinkButton';
 import { GenerateBracketButton } from '@/components/organizer/GenerateBracketButton';
 import { UpdateStatusButton } from '@/components/organizer/UpdateStatusButton';
+import InviteCodePanel from '@/components/organizer/InviteCodePanel';
 import { FORMATS } from '@/lib/sports';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
@@ -50,6 +51,13 @@ export default async function OrganizerTournamentPage({
         <p className="truncate text-sm text-gray-500 dark:text-gray-400">{publicUrl}</p>
         <CopyLinkButton url={publicUrl} />
       </div>
+
+      <InviteCodePanel
+        tournamentId={tournament.id}
+        initialCode={tournament.inviteCode}
+        appUrl={APP_URL}
+        allowGuestRegistration={tournament.allowGuestRegistration}
+      />
 
       <dl className="mt-6 grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
         <div>

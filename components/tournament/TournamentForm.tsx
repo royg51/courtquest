@@ -29,6 +29,7 @@ export interface TournamentFormDefaults {
   registrationDeadline: string;
   venue: string;
   address: string;
+  allowGuestRegistration: boolean;
 }
 
 interface Props {
@@ -66,6 +67,7 @@ export default function TournamentForm({ mode, tournamentId, defaults }: Props) 
       registrationDeadline: defaults?.registrationDeadline as unknown as Date | undefined,
       venue: defaults?.venue,
       address: defaults?.address,
+      allowGuestRegistration: defaults?.allowGuestRegistration ?? false,
     },
   });
 
@@ -205,6 +207,20 @@ export default function TournamentForm({ mode, tournamentId, defaults }: Props) 
 
       <TextField label="Venue (optional)" error={errors.venue?.message} {...register('venue')} />
       <TextField label="Address (optional)" error={errors.address?.message} {...register('address')} />
+
+      <label className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+        <input
+          type="checkbox"
+          {...register('allowGuestRegistration')}
+          className="mt-0.5 h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500/40 dark:border-gray-700"
+        />
+        <span>
+          Allow guest registration
+          <span className="block text-xs text-gray-500 dark:text-gray-400">
+            Players can register without creating an account.
+          </span>
+        </span>
+      </label>
 
       <button
         type="submit"

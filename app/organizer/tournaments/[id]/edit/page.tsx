@@ -43,6 +43,7 @@ export default async function EditTournamentPage({ params }: { params: { id: str
     registrationDeadline: toDateInputValue(tournament.registrationDeadline),
     venue: tournament.venue ?? '',
     address: tournament.address ?? '',
+    allowGuestRegistration: tournament.allowGuestRegistration,
   };
 
   return (

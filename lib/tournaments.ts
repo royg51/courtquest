@@ -60,6 +60,38 @@ export const getTournamentById = cache(async (id: string) => {
   });
 });
 
+// Short, human-typable join code. Excludes visually ambiguous characters
+// (0/O, 1/I/L) so codes read aloud or copied from a flyer don't get mangled.
+const INVITE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+
+function randomInviteCode(length = 6): string {
+  let code = '';
+  for (let i = 0; i < length; i++) {
+    code += INVITE_ALPHABET[Math.floor(Math.random() * INVITE_ALPHABET.length)];
+  }
+  return code;
+}
+
+// Generates (or regenerates) a unique invite code for a tournament. Retries
+// on the rare collision against the unique index.
+export async function generateInviteCode(tournamentId: string): Promise<string> {
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const code = randomInviteCode();
+    const clash = await db.tournament.findUnique({ where: { inviteCode: code }, select: { id: true } });
+    if (clash) continue;
+    await db.tournament.update({ where: { id: tournamentId }, data: { inviteCode: code } });
+    return code;
+  }
+  throw new Error('Could not generate a unique invite code');
+}
+
+export const getTournamentByInviteCode = cache(async (code: string) => {
+  return db.tournament.findUnique({
+    where: { inviteCode: code.toUpperCase() },
+    select: { id: true, slug: true, name: true, status: true },
+  });
+});
+
 function slugify(name: string): string {
   return name
     .toLowerCase()
@@ -106,6 +138,7 @@ export async function createTournament(
       requiresPayment: entryFeeCents > 0,
       venue: input.venue,
       address: input.address,
+      allowGuestRegistration: input.allowGuestRegistration ?? false,
     },
   });
 }
@@ -128,6 +161,8 @@ export async function updateTournament(id: string, input: UpdateTournamentInput)
   if (input.registrationDeadline !== undefined) data.registrationDeadline = input.registrationDeadline;
   if (input.venue !== undefined) data.venue = input.venue;
   if (input.address !== undefined) data.address = input.address;
+  if (input.allowGuestRegistration !== undefined)
+    data.allowGuestRegistration = input.allowGuestRegistration;
   if (input.status !== undefined) data.status = input.status;
 
   if (input.entryType !== undefined) {
