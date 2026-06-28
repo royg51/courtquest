@@ -76,7 +76,19 @@ function getUpstashLimiter(name: string, config: RateLimitConfig): Ratelimit {
 
 // Dev-only in-memory fallback: fixed-window counter per key. Cleared
 // opportunistically (no background timer needed — checked lazily on read).
-const memoryStore = new Map<string, { count: number; resetAt: number }>();
+//
+// Stashed on globalThis rather than a plain module-level variable for the
+// same reason lib/db.ts does this for the Prisma client: Next.js's dev
+// server can re-evaluate a route's module graph between requests (on-
+// demand entries, fast refresh), which would otherwise silently reset
+// this Map and make rate limits look like they're not working.
+const globalForRateLimit = globalThis as unknown as {
+  rateLimitMemoryStore?: Map<string, { count: number; resetAt: number }>;
+};
+const memoryStore = globalForRateLimit.rateLimitMemoryStore ?? new Map();
+if (process.env.NODE_ENV !== 'production') {
+  globalForRateLimit.rateLimitMemoryStore = memoryStore;
+}
 
 function checkMemoryLimit(
   name: string,
