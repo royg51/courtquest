@@ -11,8 +11,9 @@ import { useEffect, useState } from 'react';
 // there's nothing to forget to remove before shipping — the same code runs
 // everywhere, it just only activates under the right conditions.
 function respectsDoNotTrack(): boolean {
-  const nav = navigator as Navigator & { msDoNotTrack?: string };
-  return nav.doNotTrack === '1' || window.doNotTrack === '1' || nav.msDoNotTrack === '1';
+  const nav = navigator as Navigator & { doNotTrack?: string; msDoNotTrack?: string };
+  const win = window as Window & { doNotTrack?: string };
+  return nav.doNotTrack === '1' || win.doNotTrack === '1' || nav.msDoNotTrack === '1';
 }
 
 export function Analytics() {
