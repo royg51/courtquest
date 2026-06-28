@@ -12,6 +12,9 @@ import {
   registrationConfirmationEmail,
   donationThankYouEmail,
   matchReadyEmail,
+  paymentConfirmationEmail,
+  organizerNewRegistrationEmail,
+  tournamentResultsEmail,
 } from '@/lib/email/templates';
 
 let _resend: Resend | null = null;
@@ -80,4 +83,39 @@ export async function sendMatchReadyNotification(opts: {
 }) {
   const { subject, html } = matchReadyEmail(opts);
   await send({ to: opts.to, subject, html, tag: 'match-ready' });
+}
+
+export async function sendPaymentConfirmation(opts: {
+  to: string;
+  name: string;
+  tournamentName: string;
+  tournamentSlug: string;
+  amountCents: number;
+}) {
+  const { subject, html } = paymentConfirmationEmail(opts);
+  await send({ to: opts.to, subject, html, tag: 'payment-confirmation' });
+}
+
+export async function sendOrganizerNewRegistrationNotification(opts: {
+  to: string;
+  organizerName: string;
+  tournamentName: string;
+  tournamentId: string;
+  teamName: string;
+  playerName: string;
+  paid: boolean;
+}) {
+  const { subject, html } = organizerNewRegistrationEmail(opts);
+  await send({ to: opts.to, subject, html, tag: 'organizer-new-registration' });
+}
+
+export async function sendTournamentResults(opts: {
+  to: string;
+  name: string;
+  tournamentName: string;
+  tournamentSlug: string;
+  championName: string;
+}) {
+  const { subject, html } = tournamentResultsEmail(opts);
+  await send({ to: opts.to, subject, html, tag: 'tournament-results' });
 }

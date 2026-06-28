@@ -6,7 +6,7 @@
 // If it's the final match, set tournament.status = COMPLETED.
 
 import { db } from '@/lib/db';
-import { sendMatchReadyNotification } from '@/lib/email';
+import { sendMatchReadyNotification, sendTournamentResults } from '@/lib/email';
 
 export class MatchError extends Error {
   code: string;
@@ -77,6 +77,8 @@ export async function submitScore(matchId: string, scores: { scoreA: number; sco
   // would tie up a connection for the duration of the network call.
   if (match.nextMatchId) {
     await notifyIfNextMatchReady(match.nextMatchId, match.round.bracket.tournamentId);
+  } else {
+    await notifyTournamentResults(match.round.bracket.tournamentId, winnerId);
   }
 
   return updatedMatch;
@@ -122,4 +124,36 @@ async function notifyIfNextMatchReady(nextMatchId: string, tournamentId: string)
 
   await notifyTeam(nextMatch.teamA, nextMatch.teamB.name);
   await notifyTeam(nextMatch.teamB, nextMatch.teamA.name);
+}
+
+// Fires once, when the finals match completes and the tournament flips to
+// COMPLETED — emails every team that played, not just the winner.
+async function notifyTournamentResults(tournamentId: string, championTeamId: string) {
+  const tournament = await db.tournament.findUnique({
+    where: { id: tournamentId },
+    select: {
+      name: true,
+      slug: true,
+      teams: { include: { members: { include: { user: true } } } },
+    },
+  });
+  if (!tournament) return;
+
+  const champion = tournament.teams.find((t) => t.id === championTeamId);
+  if (!champion) return;
+
+  for (const team of tournament.teams) {
+    for (const member of team.members) {
+      const to = member.user?.email ?? member.guestEmail;
+      const name = member.user?.name ?? member.guestName;
+      if (!to || !name) continue;
+      await sendTournamentResults({
+        to,
+        name,
+        tournamentName: tournament.name,
+        tournamentSlug: tournament.slug,
+        championName: champion.name,
+      });
+    }
+  }
 }

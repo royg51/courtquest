@@ -7,7 +7,8 @@ import { getTournamentById } from '@/lib/tournaments';
 import { getTeamsForTournament, registerTeam, RegistrationError } from '@/lib/teams';
 import { registerTeamSchema } from '@/lib/schemas/team';
 import { checkRateLimit, rateLimitResponse, RATE_LIMIT_CONFIG } from '@/lib/rate-limit';
-import { sendRegistrationConfirmation } from '@/lib/email';
+import { db } from '@/lib/db';
+import { sendRegistrationConfirmation, sendOrganizerNewRegistrationNotification } from '@/lib/email';
 
 export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth();
@@ -68,6 +69,22 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
         tournamentSlug: tournament.slug,
         teamName: team.name,
       });
+
+      const organizer = await db.user.findUnique({
+        where: { id: tournament.organizerId },
+        select: { email: true, name: true },
+      });
+      if (organizer?.email) {
+        await sendOrganizerNewRegistrationNotification({
+          to: organizer.email,
+          organizerName: organizer.name,
+          tournamentName: tournament.name,
+          tournamentId: tournament.id,
+          teamName: team.name,
+          playerName: session.user.name,
+          paid: !tournament.requiresPayment,
+        });
+      }
     }
 
     return NextResponse.json({ team }, { status: 201 });

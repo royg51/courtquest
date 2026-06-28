@@ -10,13 +10,38 @@ import * as Sentry from '@sentry/nextjs';
 import { Prisma } from '@prisma/client';
 import { constructWebhookEvent, isStripeConfigured } from '@/lib/payments';
 import { db } from '@/lib/db';
-import { sendDonationThankYou } from '@/lib/email';
+import { sendDonationThankYou, sendPaymentConfirmation } from '@/lib/email';
 
 async function markRegistrationPaid(teamId: string, stripePaymentId: string) {
-  await db.team.update({
+  // checkout.session.completed and payment_intent.succeeded can both fire
+  // for the same payment — check current status first so the confirmation
+  // email only goes out once, on whichever event lands first.
+  const before = await db.team.findUnique({ where: { id: teamId }, select: { paymentStatus: true } });
+  const alreadyPaid = before?.paymentStatus === 'PAID';
+
+  const team = await db.team.update({
     where: { id: teamId },
     data: { paymentStatus: 'PAID', stripePaymentId },
+    include: {
+      tournament: { select: { name: true, slug: true, entryFeeCents: true } },
+      members: { where: { isPrimary: true }, include: { user: true } },
+    },
   });
+
+  if (alreadyPaid) return;
+
+  const primary = team.members[0];
+  const to = primary?.user?.email;
+  const name = primary?.user?.name;
+  if (to && name) {
+    await sendPaymentConfirmation({
+      to,
+      name,
+      tournamentName: team.tournament.name,
+      tournamentSlug: team.tournament.slug,
+      amountCents: team.tournament.entryFeeCents,
+    });
+  }
 }
 
 async function recordDonation(input: {

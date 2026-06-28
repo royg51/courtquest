@@ -110,3 +110,65 @@ export function matchReadyEmail(opts: {
   });
   return { subject, html };
 }
+
+export function paymentConfirmationEmail(opts: {
+  name: string;
+  tournamentName: string;
+  tournamentSlug: string;
+  amountCents: number;
+}) {
+  const amount = (opts.amountCents / 100).toLocaleString('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  });
+  const subject = `Payment received — ${opts.tournamentName}`;
+  const html = layout({
+    preheader: `Your ${amount} entry fee for ${opts.tournamentName} is confirmed.`,
+    bodyHtml: `
+      <p>Hi ${opts.name},</p>
+      <p>We've received your entry fee payment of <strong>${amount}</strong> for <strong>${opts.tournamentName}</strong>. You're all set to play.</p>
+      ${button('View tournament', `${APP_URL}/tournaments/${opts.tournamentSlug}`)}
+    `,
+  });
+  return { subject, html };
+}
+
+export function organizerNewRegistrationEmail(opts: {
+  organizerName: string;
+  tournamentName: string;
+  tournamentId: string;
+  teamName: string;
+  playerName: string;
+  paid: boolean;
+}) {
+  const subject = `New registration — ${opts.tournamentName}`;
+  const html = layout({
+    preheader: `${opts.playerName} just registered for ${opts.tournamentName}.`,
+    bodyHtml: `
+      <p>Hi ${opts.organizerName},</p>
+      <p><strong>${opts.playerName}</strong> registered team "${opts.teamName}" for <strong>${opts.tournamentName}</strong>.</p>
+      <p>Payment: <strong>${opts.paid ? 'Paid' : 'Not required / pending'}</strong></p>
+      ${button('View registrations', `${APP_URL}/organizer/tournaments/${opts.tournamentId}/registrations`)}
+    `,
+  });
+  return { subject, html };
+}
+
+export function tournamentResultsEmail(opts: {
+  name: string;
+  tournamentName: string;
+  tournamentSlug: string;
+  championName: string;
+}) {
+  const subject = `${opts.tournamentName} has wrapped up`;
+  const html = layout({
+    preheader: `${opts.championName} won ${opts.tournamentName}.`,
+    bodyHtml: `
+      <p>Hi ${opts.name},</p>
+      <p>Thanks for playing in <strong>${opts.tournamentName}</strong>!</p>
+      <p>Champion: <strong>${opts.championName}</strong></p>
+      ${button('See final bracket', `${APP_URL}/tournaments/${opts.tournamentSlug}/bracket`)}
+    `,
+  });
+  return { subject, html };
+}
