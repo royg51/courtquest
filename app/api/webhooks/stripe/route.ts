@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import * as Sentry from '@sentry/nextjs';
 import { Prisma } from '@prisma/client';
 import { constructWebhookEvent, isStripeConfigured } from '@/lib/payments';
 import { db } from '@/lib/db';
@@ -111,8 +112,11 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     // Never let an unexpected shape or a transient DB error crash the
     // handler outright — log it and 500 so Stripe retries, but don't leak
-    // internal details in the response.
+    // internal details in the response. Captured explicitly (not just
+    // console.error) since it's caught here and would otherwise never
+    // reach Sentry's automatic unhandled-exception instrumentation.
     console.error('[stripe webhook] handler error:', error);
+    Sentry.captureException(error, { tags: { route: 'webhooks/stripe', eventType: event.type } });
     return NextResponse.json({ error: 'Internal error', code: 'WEBHOOK_HANDLER_ERROR' }, { status: 500 });
   }
 
