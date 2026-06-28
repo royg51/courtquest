@@ -128,3 +128,21 @@ export async function updateTournament(
 export async function deleteTournament(id: string) {
   return db.tournament.delete({ where: { id } });
 }
+
+// Tournament revenue is entry fees only — donations are a separate, global
+// revenue stream and are intentionally never read here (see the Donation
+// model's tournamentId comment in schema.prisma for why).
+export async function getTournamentRevenue(tournamentId: string) {
+  const [tournament, totalParticipants, paidParticipants] = await Promise.all([
+    db.tournament.findUnique({ where: { id: tournamentId }, select: { entryFeeCents: true } }),
+    db.team.count({ where: { tournamentId, status: { not: 'WITHDRAWN' } } }),
+    db.team.count({ where: { tournamentId, paymentStatus: 'PAID' } }),
+  ]);
+
+  const entryFeeCents = tournament?.entryFeeCents ?? 0;
+  return {
+    totalEntryFeesCents: paidParticipants * entryFeeCents,
+    totalParticipants,
+    paidParticipants,
+  };
+}

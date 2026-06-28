@@ -4,8 +4,7 @@
 import Link from 'next/link';
 import { redirect, notFound } from 'next/navigation';
 import { auth, requireRole } from '@/lib/auth';
-import { getTournamentById } from '@/lib/tournaments';
-import { getPaidTeamCount } from '@/lib/teams';
+import { getTournamentById, getTournamentRevenue } from '@/lib/tournaments';
 import { CopyLinkButton } from '@/components/organizer/CopyLinkButton';
 import { GenerateBracketButton } from '@/components/organizer/GenerateBracketButton';
 import { UpdateStatusButton } from '@/components/organizer/UpdateStatusButton';
@@ -33,8 +32,9 @@ export default async function OrganizerTournamentPage({
   }
 
   const publicUrl = `${APP_URL}/tournaments/${tournament.slug}`;
-  const paidTeamCount = tournament.requiresPayment ? await getPaidTeamCount(tournament.id) : 0;
-  const revenueCents = paidTeamCount * tournament.entryFeeCents;
+  const revenue = tournament.requiresPayment
+    ? await getTournamentRevenue(tournament.id)
+    : null;
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-8">
@@ -63,13 +63,13 @@ export default async function OrganizerTournamentPage({
             {new Date(tournament.startDate).toLocaleDateString()}
           </dd>
         </div>
-        {tournament.requiresPayment && (
+        {revenue && (
           <div>
             <dt className="text-gray-500 dark:text-gray-400">Entry fee revenue</dt>
             <dd className="font-medium text-gray-900 dark:text-gray-100">
-              ${(revenueCents / 100).toFixed(2)}{' '}
+              ${(revenue.totalEntryFeesCents / 100).toFixed(2)}{' '}
               <span className="text-xs text-gray-500 dark:text-gray-400">
-                ({paidTeamCount} paid)
+                ({revenue.paidParticipants} paid)
               </span>
             </dd>
           </div>

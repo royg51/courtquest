@@ -1,10 +1,21 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import nextDynamic from 'next/dynamic';
 import { Heart, CheckCircle2, XCircle, Trophy, Users } from 'lucide-react';
 import { isStripeConfigured, retrieveCheckoutSession } from '@/lib/payments';
 import { getRecentDonations, getTopDonors } from '@/lib/donations';
 import DonationForm from '@/components/donate/DonationForm';
 import { DonationConfetti } from '@/components/donate/DonationConfetti';
+import { AutoRedirect } from '@/components/donate/AutoRedirect';
+
+// Lazy-loaded with no SSR: pulls in @supabase/supabase-js, which is only
+// needed for the live-update subscription, not the initial render — without
+// this it added ~60kB to every /donate page load even for visitors who never
+// benefit from realtime updates.
+const LiveDonationsRefresher = nextDynamic(
+  () => import('@/components/donate/LiveDonationsRefresher').then((m) => m.LiveDonationsRefresher),
+  { ssr: false }
+);
 
 export const metadata: Metadata = {
   title: 'Donate',
@@ -73,11 +84,15 @@ export default async function DonatePage({
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-12">
+      <LiveDonationsRefresher />
       {successDetails && (
         <div className="mb-8 rounded-lg border border-green-200 bg-green-50 px-6 py-8 text-center dark:border-green-900 dark:bg-green-900/20">
           <DonationConfetti />
           <CheckCircle2 className="mx-auto h-10 w-10 text-green-600 dark:text-green-400" />
-          <h1 className="mt-3 text-xl font-bold text-green-800 dark:text-green-300">
+          <p className="mt-3 inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-green-700 dark:bg-green-900/40 dark:text-green-400">
+            Transaction Successful
+          </p>
+          <h1 className="mt-2 text-xl font-bold text-green-800 dark:text-green-300">
             Thank you{successDetails.name ? `, ${successDetails.name}` : ''}!
           </h1>
           <p className="mt-1 text-green-700 dark:text-green-400">
@@ -95,6 +110,7 @@ export default async function DonatePage({
           >
             Back to Home
           </Link>
+          <AutoRedirect href="/" seconds={5} />
         </div>
       )}
       {searchParams.status === 'canceled' && (

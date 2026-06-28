@@ -108,8 +108,11 @@ model Tournament {
   isPublic             Boolean    @default(true)
   teams                Team[]
   bracket              Bracket?
+  donations            Donation[]
   createdAt            DateTime   @default(now())
   updatedAt            DateTime   @updatedAt
+
+  @@index([createdAt])
 }
 
 // status: PENDING | CONFIRMED | WAITLISTED | WITHDRAWN
@@ -132,18 +135,20 @@ model Team {
 
 // skillLevel: BEGINNER | INTERMEDIATE | ADVANCE_INTERMEDIATE | ADVANCED
 model TeamMember {
-  id             String   @id @default(cuid())
+  id             String  @id @default(cuid())
   teamId         String
-  team           Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  team           Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
   userId         String?
-  user           User?    @relation(fields: [userId], references: [id])
-  isPrimary      Boolean  @default(false)
+  user           User?   @relation(fields: [userId], references: [id])
+  isPrimary      Boolean @default(false)
   // Guest fields — for doubles partner who hasn't signed up yet
   guestName      String?
   guestEmail     String?
   guestPhone     String?
   skillLevel     String?
-  waiverAccepted Boolean  @default(false)
+  waiverAccepted Boolean @default(false)
+
+  @@index([userId])
 }
 
 model Bracket {
@@ -191,15 +196,21 @@ model Match {
 }
 
 model Donation {
-  id              String   @id @default(cuid())
+  id              String      @id @default(cuid())
   amountCents     Int
   donorName       String?
   donorEmail      String?
-  isAnonymous     Boolean  @default(false)
+  isAnonymous     Boolean     @default(false)
   // Unique so the Stripe webhook can be retried safely — Stripe redelivers
   // events on timeout/non-200, and without this a retry would insert a
   // second Donation row for the same payment.
-  stripePaymentId String?  @unique
+  stripePaymentId String?     @unique
   message         String?
-  createdAt       DateTime @default(now())
+  // Nullable, not yet set by any UI — donations are a standalone, global
+  // revenue stream today (see lib/tournaments.ts for why tournament revenue
+  // is entry-fees-only and deliberately does NOT read this field). Reserved
+  // for a future "donate to this tournament" flow.
+  tournamentId    String?
+  tournament      Tournament? @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
+  createdAt       DateTime    @default(now())
 }

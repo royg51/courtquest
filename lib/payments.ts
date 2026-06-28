@@ -63,6 +63,13 @@ export async function createDonationCheckoutSession(
       },
     ],
     metadata: { type: 'donation', isAnonymous: String(options?.isAnonymous ?? false) },
+    // Mirrored onto the PaymentIntent too (not just the Checkout Session) —
+    // the webhook also listens for payment_intent.succeeded as a backup
+    // signal, and that event only has access to the PaymentIntent's own
+    // metadata, not the Session's.
+    payment_intent_data: {
+      metadata: { type: 'donation', isAnonymous: String(options?.isAnonymous ?? false) },
+    },
     // {CHECKOUT_SESSION_ID} is a literal Stripe template token — Stripe
     // substitutes it into the redirect URL itself. The success page uses it
     // to look up the session directly from Stripe for immediate, accurate
@@ -97,6 +104,7 @@ export async function createRegistrationCheckoutSession(
       },
     ],
     metadata: { type: 'registration', ...metadata },
+    payment_intent_data: { metadata: { type: 'registration', ...metadata } },
     success_url: `${APP_URL}/tournaments/${metadata.tournamentSlug}?payment=success`,
     cancel_url: `${APP_URL}/tournaments/${metadata.tournamentSlug}?payment=canceled`,
   });

@@ -35,12 +35,20 @@ export default async function AdminPage() {
     <main className="mx-auto max-w-3xl px-4 py-8">
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold text-brand-700 dark:text-brand-400">Admin</h1>
-        <Link
-          href="/admin/users"
-          className="inline-flex shrink-0 items-center justify-center rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500/40 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
-        >
-          Manage Users
-        </Link>
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href="/admin/users"
+            className="inline-flex shrink-0 items-center justify-center rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500/40 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+          >
+            Manage Users
+          </Link>
+          <Link
+            href="/admin/donations"
+            className="inline-flex shrink-0 items-center justify-center rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500/40 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+          >
+            Donation Analytics
+          </Link>
+        </div>
       </div>
 
       {isStripeConfigured() && (

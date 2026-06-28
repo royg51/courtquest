@@ -1,5 +1,6 @@
 // POST /api/webhooks/stripe
-// Stripe sends checkout.session.completed here once a payment succeeds.
+// Stripe sends checkout.session.completed (and, as a backup signal,
+// payment_intent.succeeded — see below) here once a payment succeeds.
 // Must read the raw body (not parsed JSON) for signature verification —
 // see lib/payments.ts#constructWebhookEvent.
 
@@ -8,6 +9,42 @@ import Stripe from 'stripe';
 import { Prisma } from '@prisma/client';
 import { constructWebhookEvent, isStripeConfigured } from '@/lib/payments';
 import { db } from '@/lib/db';
+
+async function markRegistrationPaid(teamId: string, stripePaymentId: string) {
+  await db.team.update({
+    where: { id: teamId },
+    data: { paymentStatus: 'PAID', stripePaymentId },
+  });
+}
+
+async function recordDonation(input: {
+  amountCents: number;
+  donorName?: string | null;
+  donorEmail?: string | null;
+  isAnonymous: boolean;
+  stripePaymentId: string;
+}) {
+  try {
+    await db.donation.create({
+      data: {
+        amountCents: input.amountCents,
+        donorName: input.donorName ?? undefined,
+        donorEmail: input.donorEmail ?? undefined,
+        isAnonymous: input.isAnonymous,
+        stripePaymentId: input.stripePaymentId,
+      },
+    });
+  } catch (error) {
+    // Stripe redelivers events on timeout or a non-2xx response, and
+    // checkout.session.completed + payment_intent.succeeded both fire for
+    // the same payment — either path can land first. Both use the same
+    // PaymentIntent id as stripePaymentId, so whichever arrives second hits
+    // the unique constraint here. Treat that as success, not a failure.
+    const alreadyRecorded =
+      error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002';
+    if (!alreadyRecorded) throw error;
+  }
+}
 
 export async function POST(request: NextRequest) {
   if (!isStripeConfigured()) {
@@ -32,41 +69,51 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: message, code: 'INVALID_SIGNATURE' }, { status: 400 });
   }
 
-  if (event.type === 'checkout.session.completed') {
-    const session = event.data.object as Stripe.Checkout.Session;
-    const { type, teamId } = session.metadata ?? {};
+  try {
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const { type, teamId } = session.metadata ?? {};
+      const stripePaymentId =
+        typeof session.payment_intent === 'string' ? session.payment_intent : session.id;
 
-    if (type === 'registration' && teamId) {
-      await db.team.update({
-        where: { id: teamId },
-        data: {
-          paymentStatus: 'PAID',
-          stripePaymentId:
-            typeof session.payment_intent === 'string' ? session.payment_intent : session.id,
-        },
-      });
-    } else if (type === 'donation') {
-      try {
-        await db.donation.create({
-          data: {
-            amountCents: session.amount_total ?? 0,
-            donorName: session.customer_details?.name ?? undefined,
-            donorEmail: session.customer_details?.email ?? undefined,
-            isAnonymous: session.metadata?.isAnonymous === 'true',
-            stripePaymentId:
-              typeof session.payment_intent === 'string' ? session.payment_intent : session.id,
-          },
+      if (type === 'registration' && teamId) {
+        await markRegistrationPaid(teamId, stripePaymentId);
+      } else if (type === 'donation') {
+        await recordDonation({
+          amountCents: session.amount_total ?? 0,
+          donorName: session.customer_details?.name,
+          donorEmail: session.customer_details?.email,
+          isAnonymous: session.metadata?.isAnonymous === 'true',
+          stripePaymentId,
         });
-      } catch (error) {
-        // Stripe redelivers events on timeout or a non-2xx response — this
-        // donation was already recorded by an earlier delivery of the same
-        // event, not a new payment. Treat as success rather than retrying
-        // forever or recording a duplicate.
-        const alreadyRecorded =
-          error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002';
-        if (!alreadyRecorded) throw error;
+      }
+    } else if (event.type === 'payment_intent.succeeded') {
+      // Backup signal in case checkout.session.completed is ever missed —
+      // for Stripe Checkout's synchronous card flow this is normally
+      // redundant with the branch above, and the shared idempotency key
+      // (the PaymentIntent id) makes that safe either way. This event's
+      // object has no customer_details, so donor name/email are best-effort
+      // (receipt_email only, no name) — acceptable for a fallback path.
+      const paymentIntent = event.data.object as Stripe.PaymentIntent;
+      const { type, teamId } = paymentIntent.metadata ?? {};
+
+      if (type === 'registration' && teamId) {
+        await markRegistrationPaid(teamId, paymentIntent.id);
+      } else if (type === 'donation') {
+        await recordDonation({
+          amountCents: paymentIntent.amount,
+          donorEmail: paymentIntent.receipt_email,
+          isAnonymous: paymentIntent.metadata?.isAnonymous === 'true',
+          stripePaymentId: paymentIntent.id,
+        });
       }
     }
+  } catch (error) {
+    // Never let an unexpected shape or a transient DB error crash the
+    // handler outright — log it and 500 so Stripe retries, but don't leak
+    // internal details in the response.
+    console.error('[stripe webhook] handler error:', error);
+    return NextResponse.json({ error: 'Internal error', code: 'WEBHOOK_HANDLER_ERROR' }, { status: 500 });
   }
 
   return NextResponse.json({ received: true });

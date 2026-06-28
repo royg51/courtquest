@@ -4,11 +4,16 @@
 // Rules (page routes only — see note on /api/* below):
 //   /dashboard/*   → any authenticated user, else redirect to /login
 //   /organizer/*   → any authenticated user, else redirect to /login
-//   /admin/*       → any authenticated user, else redirect to /login
+//   /admin/*       → any authenticated user, else redirect to /login;
+//                    ADMIN role required, else redirect to /dashboard
 //   /login, /signup → redirect to /dashboard if already authenticated
 //
-// Role checks beyond "is logged in" (e.g. ORGANIZER vs ADMIN) happen
-// inside each page/route via requireRole() from lib/auth.ts.
+// /admin/* gets a role check here too (not just at the page level) as
+// defense in depth — the JWT already carries `role` via the session
+// callback in lib/auth.ts, so this is free to check at the edge. Finer-
+// grained checks (e.g. ORGANIZER vs ADMIN ownership on /organizer/*) still
+// happen inside each page/route via requireRole(), since middleware only
+// has the JWT, not DB access for ownership checks.
 //
 // /api/* routes are intentionally NOT redirected here: API routes already
 // call auth()/requireRole() themselves and return JSON 401/403 (see e.g.
@@ -40,6 +45,11 @@ export default auth((req) => {
     const loginUrl = new URL('/login', req.url);
     loginUrl.searchParams.set('callbackUrl', pathname);
     return NextResponse.redirect(loginUrl);
+  }
+
+  const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/');
+  if (isLoggedIn && isAdminRoute && req.auth?.user?.role !== 'ADMIN') {
+    return NextResponse.redirect(new URL('/dashboard', req.url));
   }
 
   return NextResponse.next();

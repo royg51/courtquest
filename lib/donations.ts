@@ -32,3 +32,32 @@ export async function getTotalDonatedCents() {
   const result = await db.donation.aggregate({ _sum: { amountCents: true } });
   return result._sum.amountCents ?? 0;
 }
+
+// Admin-only — unlike getRecentDonations/getTopDonors, this includes
+// anonymous donations and donor email. "Anonymous" means hidden from the
+// public donor lists, not hidden from the org's own records (Stripe already
+// has the payer's identity regardless; admins need it for bookkeeping).
+export async function getAllDonationsForAdmin(take = 100) {
+  return db.donation.findMany({
+    orderBy: { createdAt: 'desc' },
+    take,
+    select: {
+      id: true,
+      donorName: true,
+      donorEmail: true,
+      amountCents: true,
+      isAnonymous: true,
+      message: true,
+      stripePaymentId: true,
+      createdAt: true,
+    },
+  });
+}
+
+export async function getDonationStats() {
+  const [totalCents, count] = await Promise.all([
+    getTotalDonatedCents(),
+    db.donation.count(),
+  ]);
+  return { totalCents, count };
+}
