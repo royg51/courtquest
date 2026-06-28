@@ -9,6 +9,8 @@ const ACTION_LABELS: Record<string, string> = {
   TOURNAMENT_UPDATED: 'Tournament updated',
   TOURNAMENT_DELETED: 'Tournament deleted',
   MATCH_SCORE_UPDATED: 'Score updated',
+  MATCH_SCHEDULED: 'Match scheduled',
+  COURTS_AUTO_ASSIGNED: 'Courts auto-assigned',
   BRACKET_GENERATED: 'Bracket generated',
 };
 
@@ -17,6 +19,8 @@ const ACTION_TONE: Record<string, string> = {
   TOURNAMENT_UPDATED: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
   TOURNAMENT_DELETED: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300',
   MATCH_SCORE_UPDATED: 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+  MATCH_SCHEDULED: 'bg-cyan-50 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300',
+  COURTS_AUTO_ASSIGNED: 'bg-cyan-50 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300',
   BRACKET_GENERATED: 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300',
 };
 

@@ -22,8 +22,103 @@ export async function getMatchById(matchId: string) {
     include: {
       teamA: { select: { id: true, name: true } },
       teamB: { select: { id: true, name: true } },
+      round: { include: { bracket: { select: { tournamentId: true } } } },
     },
   });
+}
+
+// Set/clear a single match's court + scheduled time. BYE matches aren't
+// playable, so they can't be scheduled.
+export async function updateMatchSchedule(
+  matchId: string,
+  data: { courtNumber: number | null; scheduledAt: Date | null }
+) {
+  const match = await db.match.findUnique({ where: { id: matchId }, select: { status: true } });
+  if (!match) throw new MatchError('NOT_FOUND', 'Match not found');
+  if (match.status === 'BYE') {
+    throw new MatchError('INVALID_MATCH', 'Bye matches cannot be scheduled');
+  }
+  return db.match.update({
+    where: { id: matchId },
+    data: { courtNumber: data.courtNumber, scheduledAt: data.scheduledAt },
+  });
+}
+
+// Distributes playable matches across the tournament's available courts,
+// round by round (so a single round's matches spread across courts rather
+// than piling onto court 1). BYE matches are skipped. Returns how many
+// matches were assigned. Idempotent: re-running just re-spreads them.
+export async function autoAssignCourts(tournamentId: string): Promise<number> {
+  const tournament = await db.tournament.findUnique({
+    where: { id: tournamentId },
+    select: { numberOfCourts: true, bracket: { select: { id: true } } },
+  });
+  if (!tournament) throw new MatchError('NOT_FOUND', 'Tournament not found');
+  if (!tournament.bracket) throw new MatchError('NO_BRACKET', 'Generate the bracket first');
+
+  const courts = Math.max(1, tournament.numberOfCourts);
+  const matches = await db.match.findMany({
+    where: { round: { bracketId: tournament.bracket.id }, status: { not: 'BYE' } },
+    orderBy: [{ round: { number: 'asc' } }, { position: 'asc' }],
+    select: { id: true },
+  });
+
+  await db.$transaction(
+    matches.map((m, i) =>
+      db.match.update({ where: { id: m.id }, data: { courtNumber: (i % courts) + 1 } })
+    )
+  );
+
+  return matches.length;
+}
+
+export interface CourtQueue {
+  court: number;
+  matches: {
+    id: string;
+    round: string;
+    teamA: string | null;
+    teamB: string | null;
+    scheduledAt: string | null;
+    status: string;
+  }[];
+}
+
+// "Next up on each court" — upcoming (not completed, not bye) matches that
+// have a court assigned, grouped by court and ordered by scheduled time then
+// bracket position. Powers the order-of-play / queue displays.
+export async function getCourtQueues(tournamentId: string): Promise<CourtQueue[]> {
+  const matches = await db.match.findMany({
+    where: {
+      round: { bracket: { tournamentId } },
+      status: { in: ['PENDING', 'IN_PROGRESS'] },
+      courtNumber: { not: null },
+    },
+    orderBy: [{ scheduledAt: 'asc' }, { round: { number: 'asc' } }, { position: 'asc' }],
+    include: {
+      teamA: { select: { name: true } },
+      teamB: { select: { name: true } },
+      round: { select: { name: true } },
+    },
+  });
+
+  const byCourt = new Map<number, CourtQueue['matches']>();
+  for (const m of matches) {
+    const court = m.courtNumber!;
+    if (!byCourt.has(court)) byCourt.set(court, []);
+    byCourt.get(court)!.push({
+      id: m.id,
+      round: m.round.name,
+      teamA: m.teamA?.name ?? null,
+      teamB: m.teamB?.name ?? null,
+      scheduledAt: m.scheduledAt?.toISOString() ?? null,
+      status: m.status,
+    });
+  }
+
+  return [...byCourt.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([court, queueMatches]) => ({ court, matches: queueMatches }));
 }
 
 export async function submitScore(matchId: string, scores: { scoreA: number; scoreB: number }) {

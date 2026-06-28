@@ -65,8 +65,19 @@ export default function MatchCard({ match, mode = 'public', onScoreSubmit }: Pro
         <span className={`font-medium ${STATUS_STYLE[match.status]}`}>
           {STATUS_LABEL[match.status]}
         </span>
-        {match.courtNumber && (
-          <span className="text-gray-400 dark:text-gray-500">Court {match.courtNumber}</span>
+        {(match.courtNumber || match.scheduledAt) && (
+          <span className="text-gray-400 dark:text-gray-500">
+            {match.courtNumber ? `Court ${match.courtNumber}` : ''}
+            {match.courtNumber && match.scheduledAt ? ' · ' : ''}
+            {match.scheduledAt
+              ? new Date(match.scheduledAt).toLocaleString(undefined, {
+                  month: 'short',
+                  day: 'numeric',
+                  hour: 'numeric',
+                  minute: '2-digit',
+                })
+              : ''}
+          </span>
         )}
       </div>
 

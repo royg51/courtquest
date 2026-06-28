@@ -124,12 +124,20 @@ export default async function OrganizerTournamentPage({
         </Link>
 
         {tournament.bracket ? (
-          <Link
-            href={`/organizer/tournaments/${tournament.id}/bracket`}
-            className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500/40 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
-          >
-            Manage Bracket
-          </Link>
+          <>
+            <Link
+              href={`/organizer/tournaments/${tournament.id}/bracket`}
+              className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500/40 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+            >
+              Manage Bracket
+            </Link>
+            <Link
+              href={`/organizer/tournaments/${tournament.id}/schedule`}
+              className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500/40 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+            >
+              Schedule
+            </Link>
+          </>
         ) : (
           <GenerateBracketButton tournamentId={tournament.id} />
         )}
