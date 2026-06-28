@@ -18,3 +18,12 @@ export const updateMatchScheduleSchema = z.object({
 });
 
 export type UpdateMatchScheduleInput = z.infer<typeof updateMatchScheduleSchema>;
+
+// Live status toggle — organizers flip a match between PENDING and IN_PROGRESS
+// ("Go Live" / "End"). COMPLETED is reached only by submitting a score, never
+// here, and BYE/COMPLETED matches can't be toggled.
+export const updateMatchStatusSchema = z.object({
+  status: z.enum(['PENDING', 'IN_PROGRESS']),
+});
+
+export type UpdateMatchStatusInput = z.infer<typeof updateMatchStatusSchema>;

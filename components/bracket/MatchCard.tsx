@@ -34,9 +34,39 @@ export default function MatchCard({ match, mode = 'public', onScoreSubmit }: Pro
   const [scoreA, setScoreA] = useState(match.scoreA?.toString() ?? '');
   const [scoreB, setScoreB] = useState(match.scoreB?.toString() ?? '');
   const [submitting, setSubmitting] = useState(false);
+  const [togglingLive, setTogglingLive] = useState(false);
 
   const canScore =
-    mode === 'organizer' && match.status === 'PENDING' && match.teamA && match.teamB;
+    mode === 'organizer' &&
+    (match.status === 'PENDING' || match.status === 'IN_PROGRESS') &&
+    match.teamA &&
+    match.teamB;
+  const canToggleLive =
+    mode === 'organizer' &&
+    (match.status === 'PENDING' || match.status === 'IN_PROGRESS') &&
+    match.teamA &&
+    match.teamB;
+  const isLive = match.status === 'IN_PROGRESS';
+
+  const toggleLive = async () => {
+    setTogglingLive(true);
+    try {
+      const res = await fetch(`/api/matches/${match.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: isLive ? 'PENDING' : 'IN_PROGRESS' }),
+      });
+      if (!res.ok) {
+        const error = await res.json().catch(() => null);
+        toast.error(error?.error ?? 'Failed to update');
+        return;
+      }
+      toast.success(isLive ? 'Match ended' : 'Match is live');
+      onScoreSubmit?.(match.id);
+    } finally {
+      setTogglingLive(false);
+    }
+  };
 
   const submit = async () => {
     setSubmitting(true);
@@ -62,9 +92,19 @@ export default function MatchCard({ match, mode = 'public', onScoreSubmit }: Pro
   return (
     <div className="w-56 rounded-lg border border-gray-200 bg-white p-3 text-sm shadow-sm transition-shadow hover:shadow-md dark:border-gray-800 dark:bg-gray-900">
       <div className="mb-2 flex items-center justify-between text-xs">
-        <span className={`font-medium ${STATUS_STYLE[match.status]}`}>
-          {STATUS_LABEL[match.status]}
-        </span>
+        {isLive ? (
+          <span className="inline-flex items-center gap-1 font-semibold text-red-600 dark:text-red-400">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-red-600" />
+            </span>
+            LIVE
+          </span>
+        ) : (
+          <span className={`font-medium ${STATUS_STYLE[match.status]}`}>
+            {STATUS_LABEL[match.status]}
+          </span>
+        )}
         {(match.courtNumber || match.scheduledAt) && (
           <span className="text-gray-400 dark:text-gray-500">
             {match.courtNumber ? `Court ${match.courtNumber}` : ''}
@@ -103,13 +143,29 @@ export default function MatchCard({ match, mode = 'public', onScoreSubmit }: Pro
       </div>
 
       {canScore && !editing && (
-        <button
-          type="button"
-          onClick={() => setEditing(true)}
-          className="mt-2 w-full rounded-md border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
-        >
-          Enter Score
-        </button>
+        <div className="mt-2 flex gap-2">
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+          >
+            Enter Score
+          </button>
+          {canToggleLive && (
+            <button
+              type="button"
+              onClick={toggleLive}
+              disabled={togglingLive}
+              className={`rounded-md px-2 py-1 text-xs font-medium transition-colors disabled:opacity-50 ${
+                isLive
+                  ? 'border border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800'
+                  : 'bg-red-600 text-white hover:bg-red-700'
+              }`}
+            >
+              {isLive ? 'End' : 'Go Live'}
+            </button>
+          )}
+        </div>
       )}
       {editing && (
         <div className="mt-2 flex gap-2">

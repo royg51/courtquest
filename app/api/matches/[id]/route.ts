@@ -5,8 +5,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth, requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { updateMatchSchedule, MatchError } from '@/lib/matches';
-import { updateMatchScheduleSchema } from '@/lib/schemas/match';
+import { updateMatchSchedule, updateMatchStatus, MatchError } from '@/lib/matches';
+import { updateMatchScheduleSchema, updateMatchStatusSchema } from '@/lib/schemas/match';
 import { recordAudit } from '@/lib/audit';
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
@@ -35,15 +35,30 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     return NextResponse.json({ error: 'Invalid JSON', code: 'BAD_REQUEST' }, { status: 400 });
   }
 
-  const parsed = updateMatchScheduleSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: 'Validation failed', code: 'VALIDATION_ERROR', issues: parsed.error.issues },
-      { status: 422 }
-    );
-  }
+  // A body with `status` is a live-status toggle (Go Live / End); otherwise
+  // it's a court/time schedule update.
+  const isStatusChange = !!body && typeof body === 'object' && 'status' in body;
 
   try {
+    if (isStatusChange) {
+      const parsed = updateMatchStatusSchema.safeParse(body);
+      if (!parsed.success) {
+        return NextResponse.json(
+          { error: 'Validation failed', code: 'VALIDATION_ERROR', issues: parsed.error.issues },
+          { status: 422 }
+        );
+      }
+      const updated = await updateMatchStatus(params.id, parsed.data.status);
+      return NextResponse.json({ match: updated });
+    }
+
+    const parsed = updateMatchScheduleSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Validation failed', code: 'VALIDATION_ERROR', issues: parsed.error.issues },
+        { status: 422 }
+      );
+    }
     const updated = await updateMatchSchedule(params.id, parsed.data);
 
     await recordAudit({

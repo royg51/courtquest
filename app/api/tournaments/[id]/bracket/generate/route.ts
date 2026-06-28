@@ -5,7 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth, requireRole } from '@/lib/auth';
 import { getTournamentById } from '@/lib/tournaments';
-import { generateSingleEliminationBracket, BracketError } from '@/lib/bracket';
+import { generateSingleEliminationBracket, BracketError, notifyTournamentStarted } from '@/lib/bracket';
 import { generateRoundRobinBracket } from '@/lib/formats/round-robin';
 import { recordAudit } from '@/lib/audit';
 import { isFormatImplemented } from '@/lib/sports';
@@ -53,6 +53,9 @@ export async function POST(_request: NextRequest, { params }: { params: { id: st
       after: { bracketId: bracket.id },
       metadata: { tournamentId: params.id, tournamentSlug: tournament.slug },
     });
+
+    // Tell participants play has started. Non-blocking (sends swallow errors).
+    await notifyTournamentStarted(params.id);
 
     return NextResponse.json({ bracket }, { status: 201 });
   } catch (error) {

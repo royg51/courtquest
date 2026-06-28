@@ -45,6 +45,17 @@ export async function updateMatchSchedule(
   });
 }
 
+// Flip a match's live status (PENDING <-> IN_PROGRESS). Completed/bye matches
+// can't be toggled — those states are terminal for this control.
+export async function updateMatchStatus(matchId: string, status: 'PENDING' | 'IN_PROGRESS') {
+  const match = await db.match.findUnique({ where: { id: matchId }, select: { status: true } });
+  if (!match) throw new MatchError('NOT_FOUND', 'Match not found');
+  if (match.status === 'COMPLETED' || match.status === 'BYE') {
+    throw new MatchError('INVALID_MATCH', 'This match cannot be set live');
+  }
+  return db.match.update({ where: { id: matchId }, data: { status } });
+}
+
 // Distributes playable matches across the tournament's available courts,
 // round by round (so a single round's matches spread across courts rather
 // than piling onto court 1). BYE matches are skipped. Returns how many
