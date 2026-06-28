@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Analytics } from '@vercel/analytics/next';
 import { AuthSessionProvider } from '@/components/providers/SessionProvider';
 import { QueryProvider } from '@/components/providers/QueryProvider';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
@@ -94,6 +95,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </AuthSessionProvider>
           <ThemedToaster />
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );
