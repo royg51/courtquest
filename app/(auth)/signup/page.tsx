@@ -2,14 +2,15 @@
 // Creates a new PLAYER account. Organizer role granted by admin after signup.
 
 import { Suspense } from 'react';
-import type { Metadata } from 'next';
 import SignupForm from '@/components/auth/SignupForm';
+import { pageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: 'Sign Up',
   description: 'Create a free CourtQuest account to register for tournaments.',
-  robots: { index: false },
-};
+  path: '/signup',
+  noindex: true,
+});
 
 export default function SignupPage() {
   return (

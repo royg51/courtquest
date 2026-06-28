@@ -1,10 +1,27 @@
 // Registration page for a tournament.
 // Requires auth — redirects to login if not signed in.
 
+import type { Metadata } from 'next';
 import { redirect, notFound } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { getTournamentBySlug } from '@/lib/tournaments';
 import RegistrationForm from '@/components/registration/RegistrationForm';
+import { pageMetadata } from '@/lib/seo';
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { slug: string };
+}): Promise<Metadata> {
+  const tournament = await getTournamentBySlug(params.slug);
+  if (!tournament) return {};
+  return pageMetadata({
+    title: `Register — ${tournament.name}`,
+    description: `Register your team for ${tournament.name}.`,
+    path: `/tournaments/${params.slug}/register`,
+    noindex: true,
+  });
+}
 
 export default async function RegisterPage({ params }: { params: { slug: string } }) {
   const session = await auth();

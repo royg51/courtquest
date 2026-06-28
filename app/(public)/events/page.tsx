@@ -4,7 +4,6 @@
 // note below), and Past Events (completed DB tournaments + historical
 // recap content that predates the live tournament system).
 
-import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Trophy, Calendar, MapPin, CheckCircle2, ImageIcon } from 'lucide-react';
 import { listTournaments } from '@/lib/tournaments';
@@ -12,12 +11,14 @@ import { PAST_EVENTS } from '@/lib/content/events';
 import TournamentCard from '@/components/tournament/TournamentCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { EventsTabs } from '@/components/events/EventsTabs';
+import { pageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: 'Events',
   description:
     "Browse CourtQuest's current tournaments, upcoming events, and past tournament results.",
-};
+  path: '/events',
+});
 
 // Without this, Next statically prerenders the tournament lists at build
 // time and new/updated tournaments wouldn't show up until the next deploy.

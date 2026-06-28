@@ -1,4 +1,3 @@
-import type { Metadata } from 'next';
 import Link from 'next/link';
 import nextDynamic from 'next/dynamic';
 import { Heart, CheckCircle2, XCircle, Trophy, Users } from 'lucide-react';
@@ -7,6 +6,7 @@ import { getRecentDonations, getTopDonors } from '@/lib/donations';
 import DonationForm from '@/components/donate/DonationForm';
 import { DonationConfetti } from '@/components/donate/DonationConfetti';
 import { AutoRedirect } from '@/components/donate/AutoRedirect';
+import { pageMetadata } from '@/lib/seo';
 
 // Lazy-loaded with no SSR: pulls in @supabase/supabase-js, which is only
 // needed for the live-update subscription, not the initial render — without
@@ -17,10 +17,11 @@ const LiveDonationsRefresher = nextDynamic(
   { ssr: false }
 );
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: 'Donate',
   description: 'Support CourtQuest and help fund community sports tournaments.',
-};
+  path: '/donate',
+});
 
 // Without this, isStripeConfigured() would be evaluated once at build time
 // and baked into static HTML — adding real keys later wouldn't show up

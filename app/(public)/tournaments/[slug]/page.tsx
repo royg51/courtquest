@@ -9,6 +9,7 @@ import { getTournamentBySlug } from '@/lib/tournaments';
 import { getTeamsForTournament, getUserTeamForTournament } from '@/lib/teams';
 import PublicBracketView from '@/components/bracket/PublicBracketView';
 import { PayEntryFeeButton } from '@/components/registration/PayEntryFeeButton';
+import { pageMetadata } from '@/lib/seo';
 
 export async function generateMetadata({
   params,
@@ -18,17 +19,15 @@ export async function generateMetadata({
   const tournament = await getTournamentBySlug(params.slug);
   if (!tournament) return {};
 
-  const title = tournament.name;
   const description =
     tournament.description ??
     `${tournament.sport} tournament organized by ${tournament.organizer.name} on CourtQuest.`;
 
-  return {
-    title,
+  return pageMetadata({
+    title: tournament.name,
     description,
-    openGraph: { title, description },
-    twitter: { title, description },
-  };
+    path: `/tournaments/${params.slug}`,
+  });
 }
 
 export default async function TournamentDetailPage({

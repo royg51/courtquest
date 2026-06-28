@@ -5,6 +5,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTournamentBySlug } from '@/lib/tournaments';
 import PublicBracketView from '@/components/bracket/PublicBracketView';
+import { pageMetadata } from '@/lib/seo';
 
 export async function generateMetadata({
   params,
@@ -13,7 +14,11 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const tournament = await getTournamentBySlug(params.slug);
   if (!tournament) return {};
-  return { title: `${tournament.name} — Bracket` };
+  return pageMetadata({
+    title: `${tournament.name} — Bracket`,
+    description: `Live bracket and results for ${tournament.name}.`,
+    path: `/tournaments/${params.slug}/bracket`,
+  });
 }
 
 export default async function BracketPage({ params }: { params: { slug: string } }) {

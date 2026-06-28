@@ -6,13 +6,14 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const tournaments = await listTournaments({ isPublic: true });
 
+  // /login and /signup are intentionally absent — both are noindex
+  // (see their page metadata), and a noindex page listed in the sitemap is
+  // a contradictory signal to crawlers.
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: APP_URL, changeFrequency: 'weekly', priority: 1 },
     { url: `${APP_URL}/events`, changeFrequency: 'daily', priority: 0.9 },
     { url: `${APP_URL}/about`, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${APP_URL}/donate`, changeFrequency: 'monthly', priority: 0.6 },
-    { url: `${APP_URL}/login`, changeFrequency: 'yearly', priority: 0.3 },
-    { url: `${APP_URL}/signup`, changeFrequency: 'yearly', priority: 0.3 },
   ];
 
   const tournamentRoutes: MetadataRoute.Sitemap = tournaments.map((tournament) => ({
@@ -22,5 +23,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  return [...staticRoutes, ...tournamentRoutes];
+  // Completed tournaments have a final, stable bracket worth indexing
+  // (results page, effectively). In-progress/open ones change too often
+  // and don't have finished results yet — not worth a separate listing.
+  const bracketRoutes: MetadataRoute.Sitemap = tournaments
+    .filter((tournament) => tournament.status === 'COMPLETED')
+    .map((tournament) => ({
+      url: `${APP_URL}/tournaments/${tournament.slug}/bracket`,
+      lastModified: tournament.updatedAt,
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    }));
+
+  return [...staticRoutes, ...tournamentRoutes, ...bracketRoutes];
 }

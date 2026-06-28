@@ -1,14 +1,15 @@
 // Login page. Form lives in components/auth/LoginForm.tsx (client component).
 
 import { Suspense } from 'react';
-import type { Metadata } from 'next';
 import LoginForm from '@/components/auth/LoginForm';
+import { pageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: 'Login',
   description: 'Sign in to your CourtQuest account to manage tournaments and registrations.',
-  robots: { index: false },
-};
+  path: '/login',
+  noindex: true,
+});
 
 export default function LoginPage() {
   return (
