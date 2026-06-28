@@ -1,10 +1,11 @@
-import type { Metadata } from 'next';
 import { Flag, Trophy, ShieldCheck, TrendingUp } from 'lucide-react';
+import { pageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: 'About',
   description: "CourtQuest's mission, vision, story, and impact.",
-};
+  path: '/about',
+});
 
 const TIMELINE = [
   {

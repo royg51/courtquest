@@ -5,7 +5,11 @@ import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import SignupForm from '@/components/auth/SignupForm';
 
-export const metadata: Metadata = { title: 'Sign Up' };
+export const metadata: Metadata = {
+  title: 'Sign Up',
+  description: 'Create a free CourtQuest account to register for tournaments.',
+  robots: { index: false },
+};
 
 export default function SignupPage() {
   return (
