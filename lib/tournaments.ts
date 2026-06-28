@@ -126,7 +126,17 @@ export async function updateTournament(
 }
 
 export async function deleteTournament(id: string) {
-  return db.tournament.delete({ where: { id } });
+  // A plain tournament.delete() throws P2003 (Match_roundId_fkey) once a
+  // bracket has been generated — verified directly. Match is reachable
+  // through two cascade paths in the same delete (Round → Match via
+  // CASCADE, and Team → Match.teamA/teamB/winner via SET NULL), and
+  // Postgres doesn't reliably order those against each other when they
+  // both fire from one parent delete. Deleting matches explicitly first
+  // removes the second path before the cascade runs.
+  return db.$transaction(async (tx) => {
+    await tx.match.deleteMany({ where: { round: { bracket: { tournamentId: id } } } });
+    return tx.tournament.delete({ where: { id } });
+  });
 }
 
 // Tournament revenue is entry fees only — donations are a separate, global

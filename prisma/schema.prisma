@@ -174,13 +174,13 @@ model Match {
   roundId      String
   round        Round     @relation(fields: [roundId], references: [id], onDelete: Cascade)
   teamAId      String?
-  teamA        Team?     @relation("TeamA", fields: [teamAId], references: [id])
+  teamA        Team?     @relation("TeamA", fields: [teamAId], references: [id], onDelete: SetNull)
   teamBId      String?
-  teamB        Team?     @relation("TeamB", fields: [teamBId], references: [id])
+  teamB        Team?     @relation("TeamB", fields: [teamBId], references: [id], onDelete: SetNull)
   scoreA       Int?
   scoreB       Int?
   winnerId     String?
-  winner       Team?     @relation("Winner", fields: [winnerId], references: [id])
+  winner       Team?     @relation("Winner", fields: [winnerId], references: [id], onDelete: SetNull)
   status       String    @default("PENDING")
   // Left-to-right position within the round — SQLite/Postgres don't
   // guarantee insertion order on read, and bracket display needs one.
