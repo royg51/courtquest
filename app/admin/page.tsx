@@ -6,7 +6,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Users, Trophy, Activity, UserCheck } from 'lucide-react';
+import { Users, Trophy, Activity, UserCheck, ScrollText } from 'lucide-react';
 import { auth, requireRole } from '@/lib/auth';
 import { getPlatformStats } from '@/lib/stats';
 import { isStripeConfigured, isStripeLiveMode } from '@/lib/payments';
@@ -47,6 +47,13 @@ export default async function AdminPage() {
             className="inline-flex shrink-0 items-center justify-center rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500/40 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
           >
             Donation Analytics
+          </Link>
+          <Link
+            href="/admin/audit"
+            className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500/40 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+          >
+            <ScrollText className="h-4 w-4" />
+            Audit Log
           </Link>
         </div>
       </div>

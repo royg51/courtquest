@@ -79,6 +79,7 @@ model User {
   sessions             Session[]
   teamMembers          TeamMember[]
   tournamentsOrganized Tournament[]
+  auditLogs            AuditLog[]
   createdAt            DateTime     @default(now())
   updatedAt            DateTime     @updatedAt
 }
@@ -193,6 +194,39 @@ model Match {
   nextMatch    Match?    @relation("Advancement", fields: [nextMatchId], references: [id])
   fedByMatches Match[]   @relation("Advancement")
   isSlotA      Boolean   @default(true)
+}
+
+// Append-only audit trail for privileged/destructive actions (role changes,
+// score overrides, bracket generation, tournament edits/deletes). Never
+// updated or deleted in normal operation — it's the "who changed what, when,
+// from what to what" record that makes the platform trustworthy and lets an
+// admin investigate disputes or suspected tampering.
+//
+// action:     ROLE_CHANGED | TOURNAMENT_UPDATED | TOURNAMENT_DELETED |
+//             MATCH_SCORE_UPDATED | BRACKET_GENERATED
+// entityType: USER | TOURNAMENT | MATCH | BRACKET
+model AuditLog {
+  id         String   @id @default(cuid())
+  // Who performed the action. Nullable + SetNull so deleting a user never
+  // erases or blocks reading their historical actions (the log outlives the
+  // actor); actorEmail keeps a human-readable record even after that.
+  actorId    String?
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  actorEmail String?
+  action     String
+  entityType String
+  entityId   String?
+  // Before/after snapshots of just the changed fields (not whole rows) +
+  // freeform context (e.g. tournamentId, ip). Json so each action can store
+  // the shape that's meaningful for it without a column explosion.
+  before     Json?
+  after      Json?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@index([createdAt])
 }
 
 model Donation {

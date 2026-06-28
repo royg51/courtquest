@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth, requireRole } from '@/lib/auth';
 import { getTournamentById } from '@/lib/tournaments';
 import { generateSingleEliminationBracket, BracketError } from '@/lib/bracket';
+import { recordAudit } from '@/lib/audit';
 
 export async function POST(_request: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth();
@@ -25,6 +26,16 @@ export async function POST(_request: NextRequest, { params }: { params: { id: st
 
   try {
     const bracket = await generateSingleEliminationBracket(params.id);
+
+    await recordAudit({
+      actor: { id: session!.user.id, email: session!.user.email ?? null },
+      action: 'BRACKET_GENERATED',
+      entityType: 'BRACKET',
+      entityId: bracket.id,
+      after: { bracketId: bracket.id },
+      metadata: { tournamentId: params.id, tournamentSlug: tournament.slug },
+    });
+
     return NextResponse.json({ bracket }, { status: 201 });
   } catch (error) {
     if (error instanceof BracketError) {

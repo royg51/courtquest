@@ -7,6 +7,7 @@ import { auth, requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { submitScore, MatchError } from '@/lib/matches';
 import { submitScoreSchema } from '@/lib/schemas/match';
+import { recordAudit } from '@/lib/audit';
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth();
@@ -44,6 +45,21 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
   try {
     const updated = await submitScore(params.id, parsed.data);
+
+    await recordAudit({
+      actor: { id: session!.user.id, email: session!.user.email ?? null },
+      action: 'MATCH_SCORE_UPDATED',
+      entityType: 'MATCH',
+      entityId: params.id,
+      before: { scoreA: match.scoreA, scoreB: match.scoreB, winnerId: match.winnerId, status: match.status },
+      after: { scoreA: updated.scoreA, scoreB: updated.scoreB, winnerId: updated.winnerId, status: updated.status },
+      metadata: {
+        tournamentId: match.round.bracket.tournament.id,
+        tournamentSlug: match.round.bracket.tournament.slug,
+        round: match.round.name,
+      },
+    });
+
     return NextResponse.json({ match: updated });
   } catch (error) {
     if (error instanceof MatchError) {
