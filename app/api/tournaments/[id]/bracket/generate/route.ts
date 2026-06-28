@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth, requireRole } from '@/lib/auth';
 import { getTournamentById } from '@/lib/tournaments';
 import { generateSingleEliminationBracket, BracketError } from '@/lib/bracket';
+import { generateRoundRobinBracket } from '@/lib/formats/round-robin';
 import { recordAudit } from '@/lib/audit';
 import { isFormatImplemented } from '@/lib/sports';
 
@@ -25,13 +26,13 @@ export async function POST(_request: NextRequest, { params }: { params: { id: st
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
 
-  // The bracket engine only implements single elimination today. Reject any
-  // other (selectable-but-not-yet-built) format explicitly rather than
-  // silently generating the wrong bracket. Other engines land in Phase 6.
-  if (tournament.format !== 'SINGLE_ELIM' || !isFormatImplemented(tournament.format)) {
+  // Only formats with a working engine can generate. Selectable-but-not-yet
+  // built ones (double-elim, Swiss) are rejected explicitly rather than
+  // silently producing the wrong bracket.
+  if (!isFormatImplemented(tournament.format)) {
     return NextResponse.json(
       {
-        error: `Bracket generation for "${tournament.format}" isn't available yet — only Single Elimination is supported right now.`,
+        error: `Bracket generation for "${tournament.format}" isn't available yet.`,
         code: 'FORMAT_NOT_IMPLEMENTED',
       },
       { status: 422 }
@@ -39,7 +40,10 @@ export async function POST(_request: NextRequest, { params }: { params: { id: st
   }
 
   try {
-    const bracket = await generateSingleEliminationBracket(params.id);
+    const bracket =
+      tournament.format === 'ROUND_ROBIN'
+        ? await generateRoundRobinBracket(params.id)
+        : await generateSingleEliminationBracket(params.id);
 
     await recordAudit({
       actor: { id: session!.user.id, email: session!.user.email ?? null },

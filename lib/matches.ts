@@ -7,6 +7,7 @@
 
 import { db } from '@/lib/db';
 import { sendMatchReadyNotification, sendTournamentResults } from '@/lib/email';
+import { getRoundRobinStandings } from '@/lib/formats/round-robin';
 
 export class MatchError extends Error {
   code: string;
@@ -124,7 +125,9 @@ export async function getCourtQueues(tournamentId: string): Promise<CourtQueue[]
 export async function submitScore(matchId: string, scores: { scoreA: number; scoreB: number }) {
   const match = await db.match.findUnique({
     where: { id: matchId },
-    include: { round: { include: { bracket: true } } },
+    include: {
+      round: { include: { bracket: { include: { tournament: { select: { id: true, format: true } } } } } },
+    },
   });
 
   if (!match) throw new MatchError('NOT_FOUND', 'Match not found');
@@ -135,11 +138,17 @@ export async function submitScore(matchId: string, scores: { scoreA: number; sco
     throw new MatchError('TEAMS_NOT_SET', 'Both teams must be set before submitting a score');
   }
   if (scores.scoreA === scores.scoreB) {
-    throw new MatchError('TIE_NOT_ALLOWED', 'Elimination matches cannot end in a tie');
+    throw new MatchError('TIE_NOT_ALLOWED', 'Matches cannot end in a tie');
   }
 
   const winnerId = scores.scoreA > scores.scoreB ? match.teamAId : match.teamBId;
+  const loserId = winnerId === match.teamAId ? match.teamBId : match.teamAId;
+  const tournamentId = match.round.bracket.tournamentId;
+  const bracketId = match.round.bracketId;
+  const format = match.round.bracket.tournament.format;
 
+  // Record the result. Elimination advancement happens in the same
+  // transaction; round-robin has no advancement (completion is handled below).
   const updatedMatch = await db.$transaction(async (tx) => {
     const updated = await tx.match.update({
       where: { id: matchId },
@@ -152,28 +161,48 @@ export async function submitScore(matchId: string, scores: { scoreA: number; sco
       },
     });
 
-    if (match.nextMatchId) {
-      await tx.match.update({
-        where: { id: match.nextMatchId },
-        data: match.isSlotA ? { teamAId: winnerId } : { teamBId: winnerId },
-      });
-    } else {
-      // No next match — this was the Finals. Tournament is complete.
-      await tx.tournament.update({
-        where: { id: match.round.bracket.tournamentId },
-        data: { status: 'COMPLETED' },
-      });
+    if (format === 'SINGLE_ELIM') {
+      if (match.nextMatchId) {
+        await tx.match.update({
+          where: { id: match.nextMatchId },
+          data: match.isSlotA ? { teamAId: winnerId } : { teamBId: winnerId },
+        });
+      } else {
+        // No next match — this was the Finals. Champion + runner-up placements
+        // and tournament completion.
+        await tx.tournament.update({ where: { id: tournamentId }, data: { status: 'COMPLETED' } });
+        await tx.team.update({ where: { id: winnerId }, data: { placement: 1 } });
+        await tx.team.update({ where: { id: loserId }, data: { placement: 2 } });
+      }
     }
 
     return updated;
   });
 
-  // Outside the transaction: emailing while holding a DB transaction open
-  // would tie up a connection for the duration of the network call.
+  // Round-robin: once every match has a score, finalize standings + placements.
+  if (format === 'ROUND_ROBIN') {
+    const remaining = await db.match.count({
+      where: { round: { bracketId }, status: { in: ['PENDING', 'IN_PROGRESS'] } },
+    });
+    if (remaining === 0) {
+      const standings = await getRoundRobinStandings(tournamentId);
+      await db.$transaction(
+        standings.map((row, i) =>
+          db.team.update({ where: { id: row.teamId }, data: { placement: i + 1 } })
+        )
+      );
+      await db.tournament.update({ where: { id: tournamentId }, data: { status: 'COMPLETED' } });
+      if (standings[0]) await notifyTournamentResults(tournamentId, standings[0].teamId);
+    }
+    return updatedMatch;
+  }
+
+  // Single elimination notifications (outside the transaction — emailing while
+  // holding it open would tie up a connection for the network call).
   if (match.nextMatchId) {
-    await notifyIfNextMatchReady(match.nextMatchId, match.round.bracket.tournamentId);
+    await notifyIfNextMatchReady(match.nextMatchId, tournamentId);
   } else {
-    await notifyTournamentResults(match.round.bracket.tournamentId, winnerId);
+    await notifyTournamentResults(tournamentId, winnerId);
   }
 
   return updatedMatch;

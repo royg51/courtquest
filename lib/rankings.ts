@@ -1,16 +1,19 @@
 // Player stats + global per-sport leaderboard.
 //
-// Everything here is computed on the fly from the Match table (the source of
-// truth) rather than a denormalized stats table. That trades read cost for
-// guaranteed correctness: there's no cache to drift when a match is
-// re-scored or a bracket is regenerated (both supported flows). At current
+// Everything here is computed on the fly from the Match table + Team.placement
+// (the sources of truth) rather than a denormalized stats table. That trades
+// read cost for guaranteed correctness: there's no cache to drift when a match
+// is re-scored or a bracket regenerated (both supported flows). At current
 // scale this is cheap; if the leaderboard ever gets hot, the swap-in is a
-// materialized PlayerStat table recomputed on tournament completion — the
-// shapes returned here are already what such a table would store.
+// materialized PlayerStat table — the shapes returned here are already what
+// such a table would store.
 //
-// Points model (per the spec): match win = +10, reaching the finals = +50
-// (once per tournament), winning it = +100 (once). Byes never count as wins
-// (they're status 'BYE', excluded by the COMPLETED filter).
+// Points model (per the spec): match win = +10, reaching the final = +50,
+// winning the tournament = +100. "Final" / "champion" come from
+// Team.placement (1 = champion, 2 = runner-up), set by the format-specific
+// completion logic — so the model is correct across single-elim, round-robin,
+// etc., not tied to bracket shape. Byes never count as wins (status 'BYE',
+// excluded by the COMPLETED filter).
 
 import { cache } from 'react';
 import { db } from '@/lib/db';
@@ -18,6 +21,14 @@ import { db } from '@/lib/db';
 const POINTS_PER_WIN = 10;
 const POINTS_FINALS = 50;
 const POINTS_CHAMPION = 100;
+
+// Placement-derived bonus: champion gets finals + champion points; runner-up
+// gets the finals bonus. Anything lower contributes only match-win points.
+function placementBonus(placement: number | null): number {
+  if (placement === 1) return POINTS_FINALS + POINTS_CHAMPION;
+  if (placement === 2) return POINTS_FINALS;
+  return 0;
+}
 
 export interface PlayerProfile {
   userId: string;
@@ -53,20 +64,6 @@ export interface LeaderboardEntry {
   tournaments: number;
 }
 
-// Shared include shape: a completed match with both teams' members + the
-// owning tournament's sport/name/slug. nextMatchId === null marks the finals.
-const matchInclude = {
-  teamA: { include: { members: { select: { userId: true } } } },
-  teamB: { include: { members: { select: { userId: true } } } },
-  round: {
-    include: {
-      bracket: {
-        include: { tournament: { select: { sport: true, name: true, slug: true } } },
-      },
-    },
-  },
-} as const;
-
 export const getPlayerProfile = cache(async (userId: string): Promise<PlayerProfile | null> => {
   const user = await db.user.findUnique({
     where: { id: userId },
@@ -74,10 +71,11 @@ export const getPlayerProfile = cache(async (userId: string): Promise<PlayerProf
   });
   if (!user) return null;
 
-  // Teams this user is on (drives both "tournaments joined" and match lookup).
+  // Teams this user is on (drives "tournaments joined", match lookup, and the
+  // placement-based champion/finals bonuses).
   const teams = await db.team.findMany({
     where: { members: { some: { userId } }, status: { not: 'WITHDRAWN' } },
-    select: { id: true, tournamentId: true },
+    select: { id: true, tournamentId: true, placement: true },
   });
   const teamIds = new Set(teams.map((t) => t.id));
   const tournamentsJoined = new Set(teams.map((t) => t.tournamentId)).size;
@@ -99,7 +97,6 @@ export const getPlayerProfile = cache(async (userId: string): Promise<PlayerProf
 
   let wins = 0;
   let losses = 0;
-  let titles = 0;
   let points = 0;
   const history: MatchHistoryItem[] = [];
 
@@ -110,7 +107,6 @@ export const getPlayerProfile = cache(async (userId: string): Promise<PlayerProf
     if (!myTeam) continue;
 
     const won = m.winnerId === myTeam.id;
-    const isFinals = m.nextMatchId === null;
     const scoreFor = onTeamA ? m.scoreA : m.scoreB;
     const scoreAgainst = onTeamA ? m.scoreB : m.scoreA;
 
@@ -119,13 +115,6 @@ export const getPlayerProfile = cache(async (userId: string): Promise<PlayerProf
       points += POINTS_PER_WIN;
     } else {
       losses += 1;
-    }
-    if (isFinals) {
-      points += POINTS_FINALS;
-      if (won) {
-        titles += 1;
-        points += POINTS_CHAMPION;
-      }
     }
 
     history.push({
@@ -138,8 +127,16 @@ export const getPlayerProfile = cache(async (userId: string): Promise<PlayerProf
       scoreFor,
       scoreAgainst,
       won,
-      isFinals,
+      isFinals: m.round.name === 'Finals',
     });
+  }
+
+  // Champion/finals bonuses + titles come from final placement, not bracket
+  // shape — correct for every format.
+  let titles = 0;
+  for (const team of teams) {
+    points += placementBonus(team.placement);
+    if (team.placement === 1) titles += 1;
   }
 
   return {
@@ -156,10 +153,22 @@ export const getPlayerProfile = cache(async (userId: string): Promise<PlayerProf
 });
 
 export const getLeaderboard = cache(async (sport: string): Promise<LeaderboardEntry[]> => {
-  const matches = await db.match.findMany({
-    where: { status: 'COMPLETED', round: { bracket: { tournament: { sport } } } },
-    include: matchInclude,
-  });
+  // Teams (with placement) carry the tournaments-joined count and the
+  // champion/finals bonuses; completed matches carry the win counts.
+  const [teams, matches] = await Promise.all([
+    db.team.findMany({
+      where: { tournament: { sport }, status: { not: 'WITHDRAWN' } },
+      select: { placement: true, tournamentId: true, members: { select: { userId: true } } },
+    }),
+    db.match.findMany({
+      where: { status: 'COMPLETED', round: { bracket: { tournament: { sport } } } },
+      select: {
+        winnerId: true,
+        teamA: { select: { id: true, members: { select: { userId: true } } } },
+        teamB: { select: { id: true, members: { select: { userId: true } } } },
+      },
+    }),
+  ]);
 
   // userId -> running tally
   const tally = new Map<
@@ -175,30 +184,28 @@ export const getLeaderboard = cache(async (sport: string): Promise<LeaderboardEn
     return entry;
   };
 
-  for (const m of matches) {
-    const slug = m.round.bracket.tournament.slug;
-    const isFinals = m.nextMatchId === null;
-    const winnerId = m.winnerId;
-    const teams = [m.teamA, m.teamB].filter(Boolean) as NonNullable<typeof m.teamA>[];
+  // Tournaments joined + placement-based bonuses.
+  for (const team of teams) {
+    const bonus = placementBonus(team.placement);
+    for (const member of team.members) {
+      if (!member.userId) continue;
+      const entry = ensure(member.userId);
+      entry.tournaments.add(team.tournamentId);
+      entry.points += bonus;
+      if (team.placement === 1) entry.titles += 1;
+    }
+  }
 
-    for (const team of teams) {
-      const isWinner = team.id === winnerId;
-      for (const member of team.members) {
-        if (!member.userId) continue;
-        const entry = ensure(member.userId);
-        entry.tournaments.add(slug);
-        if (isWinner) {
-          entry.wins += 1;
-          entry.points += POINTS_PER_WIN;
-        }
-        if (isFinals) {
-          entry.points += POINTS_FINALS;
-          if (isWinner) {
-            entry.titles += 1;
-            entry.points += POINTS_CHAMPION;
-          }
-        }
-      }
+  // Match wins.
+  for (const m of matches) {
+    if (!m.winnerId) continue;
+    const winner = m.teamA?.id === m.winnerId ? m.teamA : m.teamB?.id === m.winnerId ? m.teamB : null;
+    if (!winner) continue;
+    for (const member of winner.members) {
+      if (!member.userId) continue;
+      const entry = ensure(member.userId);
+      entry.wins += 1;
+      entry.points += POINTS_PER_WIN;
     }
   }
 

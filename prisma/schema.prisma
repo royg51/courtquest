@@ -134,6 +134,12 @@ model Team {
   tournament      Tournament   @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   name            String
   seed            Int?
+  // Final standing once the tournament completes: 1 = champion, 2 = runner-up,
+  // etc. Set by the format-specific completion logic (final-match winner for
+  // elimination, standings order for round robin). Rankings read this instead
+  // of inferring "champion/finalist" from bracket shape, so points are correct
+  // regardless of format. Null until the tournament finishes.
+  placement       Int?
   status          String       @default("PENDING")
   paymentStatus   String       @default("UNPAID")
   stripePaymentId String?

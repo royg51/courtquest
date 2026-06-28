@@ -12,8 +12,8 @@ export type Sport = (typeof SPORTS)[number];
 // reject them until their engines land (roadmap Phase 6).
 export const FORMATS = [
   { value: 'SINGLE_ELIM', label: 'Single Elimination', implemented: true },
+  { value: 'ROUND_ROBIN', label: 'Round Robin', implemented: true },
   { value: 'DOUBLE_ELIM', label: 'Double Elimination', implemented: false },
-  { value: 'ROUND_ROBIN', label: 'Round Robin', implemented: false },
   { value: 'SWISS', label: 'Swiss', implemented: false },
 ] as const;
 
