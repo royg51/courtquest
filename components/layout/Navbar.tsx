@@ -12,7 +12,6 @@ import { Menu, X } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 const NAV_LINKS = [
-  { href: '/tournaments', label: 'Tournaments' },
   { href: '/events', label: 'Events' },
   { href: '/about', label: 'About' },
   { href: '/donate', label: 'Donate' },

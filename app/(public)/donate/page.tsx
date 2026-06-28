@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Heart } from 'lucide-react';
+import { Heart, CheckCircle2, XCircle } from 'lucide-react';
 import { isStripeConfigured } from '@/lib/payments';
 import DonationForm from '@/components/donate/DonationForm';
 
@@ -35,11 +35,33 @@ const FAQ = [
   },
 ];
 
-export default function DonatePage() {
+export default function DonatePage({
+  searchParams,
+}: {
+  searchParams: { status?: string };
+}) {
   const configured = isStripeConfigured();
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-12">
+      {searchParams.status === 'success' && (
+        <div className="mb-8 flex items-start gap-3 rounded-md bg-green-50 px-4 py-3 text-sm text-green-800 dark:bg-green-900/30 dark:text-green-400">
+          <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
+          <div>
+            <p className="font-medium">Thank you for your donation!</p>
+            <p className="mt-0.5">
+              Stripe will email you a receipt shortly. Your support means a lot to us.
+            </p>
+          </div>
+        </div>
+      )}
+      {searchParams.status === 'canceled' && (
+        <div className="mb-8 flex items-start gap-3 rounded-md bg-gray-100 px-4 py-3 text-sm text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+          <XCircle className="mt-0.5 h-5 w-5 shrink-0" />
+          <p>Checkout was canceled — no payment was made. Feel free to try again below.</p>
+        </div>
+      )}
+
       <div className="text-center">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-400">
           <Heart className="h-6 w-6" />

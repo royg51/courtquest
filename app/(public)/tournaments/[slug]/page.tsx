@@ -3,6 +3,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { CheckCircle2, XCircle } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { getTournamentBySlug } from '@/lib/tournaments';
 import { getTeamsForTournament, getUserTeamForTournament } from '@/lib/teams';
@@ -32,8 +33,10 @@ export async function generateMetadata({
 
 export default async function TournamentDetailPage({
   params,
+  searchParams,
 }: {
   params: { slug: string };
+  searchParams: { payment?: string };
 }) {
   const tournament = await getTournamentBySlug(params.slug);
 
@@ -49,8 +52,14 @@ export default async function TournamentDetailPage({
   const myTeam = session?.user
     ? await getUserTeamForTournament(tournament.id, session.user.id)
     : null;
+  // Trust the Stripe redirect for the just-paid case rather than only the
+  // DB's paymentStatus — the webhook that flips it to PAID is asynchronous
+  // and can land a moment after this redirect, which would otherwise show
+  // a "payment received" banner right above a still-visible "Pay Entry Fee"
+  // button.
+  const justPaid = searchParams.payment === 'success';
   const needsPayment =
-    myTeam && tournament.requiresPayment && myTeam.paymentStatus !== 'PAID';
+    myTeam && tournament.requiresPayment && myTeam.paymentStatus !== 'PAID' && !justPaid;
 
   const eventJsonLd = {
     '@context': 'https://schema.org',
@@ -74,6 +83,19 @@ export default async function TournamentDetailPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(eventJsonLd) }}
       />
+
+      {searchParams.payment === 'success' && (
+        <div className="mb-6 flex items-start gap-3 rounded-md bg-green-50 px-4 py-3 text-sm text-green-800 dark:bg-green-900/30 dark:text-green-400">
+          <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
+          <p>Payment received — your entry fee is paid and your spot is confirmed.</p>
+        </div>
+      )}
+      {searchParams.payment === 'canceled' && (
+        <div className="mb-6 flex items-start gap-3 rounded-md bg-gray-100 px-4 py-3 text-sm text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+          <XCircle className="mt-0.5 h-5 w-5 shrink-0" />
+          <p>Checkout was canceled — no payment was made. You can try again below.</p>
+        </div>
+      )}
 
       <h1 className="text-2xl font-bold text-brand-700 dark:text-brand-400">{tournament.name}</h1>
       <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
