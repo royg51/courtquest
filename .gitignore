@@ -5,14 +5,21 @@ node_modules/
 .next/
 out/
 
-# Environment variables — never commit these
-.env
-.env.local
-.env.*.local
+# Environment variables — never commit these. Broad glob (not just
+# .env/.env.local/.env.*.local) so .env.production, .env.development, etc.
+# are covered too, regardless of whether Next.js itself would generate them.
+.env*
+!.env.example
 
-# Database
-prisma/dev.db
-prisma/dev.db-journal
+# Database — globbed (not pinned to prisma/dev.db) since this is a SQLite
+# leftover pattern from before the Postgres/Supabase migration; covers it
+# wherever it ends up.
+*.db
+*.db-journal
+
+# Logs
+*.log
+npm-debug.log*
 
 # OS
 .DS_Store
