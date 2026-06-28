@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { db } from '@/lib/db';
 import { signupSchema } from '@/lib/schemas/auth';
 import { checkRateLimit, getClientIp, rateLimitResponse, RATE_LIMIT_CONFIG } from '@/lib/rate-limit';
+import { sendWelcomeEmail } from '@/lib/email';
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
@@ -42,6 +43,12 @@ export async function POST(request: NextRequest) {
     data: { name, email, passwordHash, role: 'PLAYER' },
     select: { id: true, name: true, email: true, role: true, createdAt: true },
   });
+
+  // Awaited (not fire-and-forget): on serverless, the function instance can
+  // be frozen the moment the response is returned, killing any unawaited
+  // promise mid-flight. sendWelcomeEmail catches its own errors internally,
+  // so awaiting it can't turn a failed email into a failed signup.
+  await sendWelcomeEmail({ to: user.email, name: user.name });
 
   return NextResponse.json({ user }, { status: 201 });
 }

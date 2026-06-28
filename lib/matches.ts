@@ -6,6 +6,7 @@
 // If it's the final match, set tournament.status = COMPLETED.
 
 import { db } from '@/lib/db';
+import { sendMatchReadyNotification } from '@/lib/email';
 
 export class MatchError extends Error {
   code: string;
@@ -44,8 +45,8 @@ export async function submitScore(matchId: string, scores: { scoreA: number; sco
 
   const winnerId = scores.scoreA > scores.scoreB ? match.teamAId : match.teamBId;
 
-  return db.$transaction(async (tx) => {
-    const updatedMatch = await tx.match.update({
+  const updatedMatch = await db.$transaction(async (tx) => {
+    const updated = await tx.match.update({
       where: { id: matchId },
       data: {
         scoreA: scores.scoreA,
@@ -69,6 +70,56 @@ export async function submitScore(matchId: string, scores: { scoreA: number; sco
       });
     }
 
-    return updatedMatch;
+    return updated;
   });
+
+  // Outside the transaction: emailing while holding a DB transaction open
+  // would tie up a connection for the duration of the network call.
+  if (match.nextMatchId) {
+    await notifyIfNextMatchReady(match.nextMatchId, match.round.bracket.tournamentId);
+  }
+
+  return updatedMatch;
+}
+
+// Fires once a bracket match has both teams filled in — which may happen
+// right after this update, or may have already happened on the sibling
+// match earlier. Both cases land here; only the one where both slots end
+// up set actually sends anything.
+async function notifyIfNextMatchReady(nextMatchId: string, tournamentId: string) {
+  const nextMatch = await db.match.findUnique({
+    where: { id: nextMatchId },
+    include: {
+      teamA: { include: { members: { include: { user: true } } } },
+      teamB: { include: { members: { include: { user: true } } } },
+    },
+  });
+  if (!nextMatch?.teamA || !nextMatch?.teamB) return;
+
+  const tournament = await db.tournament.findUnique({
+    where: { id: tournamentId },
+    select: { name: true, slug: true },
+  });
+  if (!tournament) return;
+
+  const notifyTeam = async (
+    team: NonNullable<typeof nextMatch.teamA>,
+    opponentName: string
+  ) => {
+    for (const member of team.members) {
+      const to = member.user?.email ?? member.guestEmail;
+      const name = member.user?.name ?? member.guestName;
+      if (!to || !name) continue;
+      await sendMatchReadyNotification({
+        to,
+        name,
+        tournamentName: tournament.name,
+        tournamentSlug: tournament.slug,
+        opponentName,
+      });
+    }
+  };
+
+  await notifyTeam(nextMatch.teamA, nextMatch.teamB.name);
+  await notifyTeam(nextMatch.teamB, nextMatch.teamA.name);
 }

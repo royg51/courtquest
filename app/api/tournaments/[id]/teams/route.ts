@@ -7,6 +7,7 @@ import { getTournamentById } from '@/lib/tournaments';
 import { getTeamsForTournament, registerTeam, RegistrationError } from '@/lib/teams';
 import { registerTeamSchema } from '@/lib/schemas/team';
 import { checkRateLimit, rateLimitResponse, RATE_LIMIT_CONFIG } from '@/lib/rate-limit';
+import { sendRegistrationConfirmation } from '@/lib/email';
 
 export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth();
@@ -57,6 +58,18 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       primaryUserId: session.user.id,
       ...parsed.data,
     });
+
+    const tournament = await getTournamentById(params.id);
+    if (tournament && session.user.email && session.user.name) {
+      await sendRegistrationConfirmation({
+        to: session.user.email,
+        name: session.user.name,
+        tournamentName: tournament.name,
+        tournamentSlug: tournament.slug,
+        teamName: team.name,
+      });
+    }
+
     return NextResponse.json({ team }, { status: 201 });
   } catch (error) {
     if (error instanceof RegistrationError) {

@@ -10,6 +10,7 @@ import * as Sentry from '@sentry/nextjs';
 import { Prisma } from '@prisma/client';
 import { constructWebhookEvent, isStripeConfigured } from '@/lib/payments';
 import { db } from '@/lib/db';
+import { sendDonationThankYou } from '@/lib/email';
 
 async function markRegistrationPaid(teamId: string, stripePaymentId: string) {
   await db.team.update({
@@ -40,10 +41,22 @@ async function recordDonation(input: {
     // checkout.session.completed + payment_intent.succeeded both fire for
     // the same payment — either path can land first. Both use the same
     // PaymentIntent id as stripePaymentId, so whichever arrives second hits
-    // the unique constraint here. Treat that as success, not a failure.
+    // the unique constraint here. Treat that as success, not a failure, and
+    // skip the thank-you email below — it would otherwise double-send.
     const alreadyRecorded =
       error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002';
     if (!alreadyRecorded) throw error;
+    return;
+  }
+
+  // isAnonymous only affects whether the donor's name appears in public
+  // donor listings — it doesn't mean they don't want a receipt.
+  if (input.donorEmail) {
+    await sendDonationThankYou({
+      to: input.donorEmail,
+      name: input.donorName ?? 'there',
+      amountCents: input.amountCents,
+    });
   }
 }
 
