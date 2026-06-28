@@ -13,27 +13,38 @@ const { withSentryConfig } = require('@sentry/nextjs');
 // bootstrap script and the JSON-LD blocks in app/layout.tsx — a nonce-based
 // strict CSP would remove it but needs per-request middleware wiring and
 // careful testing against App Router hydration; out of scope here.
-const CSP = [
-  "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://plausible.io",
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
-  "font-src 'self' data:",
-  "connect-src 'self' https://plausible.io https://*.supabase.co wss://*.supabase.co https://*.sentry.io https://*.ingest.sentry.io",
-  "frame-src 'self' https://www.google.com",
-  "object-src 'none'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  "frame-ancestors 'none'",
-].join('; ');
+//
+// 'unsafe-eval' is added ONLY in dev: Next.js's dev server (Fast Refresh /
+// eval-based source maps) calls eval() internally, which this CSP would
+// otherwise block — confirmed by reproducing it directly: with 'unsafe-eval'
+// missing, the login form's onSubmit handler threw a CSP violation in the
+// browser console and silently fell back to a native form GET (credentials
+// in the URL). The production build does not use eval and isn't affected —
+// verified the same login flow against `next build && next start` with the
+// strict policy and it completed normally.
+function buildSecurityHeaders(isDev) {
+  const csp = [
+    `script-src 'self' 'unsafe-inline' https://plausible.io${isDev ? " 'unsafe-eval'" : ''}`,
+    "default-src 'self'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob:",
+    "font-src 'self' data:",
+    "connect-src 'self' https://plausible.io https://*.supabase.co wss://*.supabase.co https://*.sentry.io https://*.ingest.sentry.io",
+    "frame-src 'self' https://www.google.com",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+  ].join('; ');
 
-const SECURITY_HEADERS = [
-  { key: 'Content-Security-Policy', value: CSP },
-  { key: 'X-Frame-Options', value: 'DENY' },
-  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-  { key: 'X-Content-Type-Options', value: 'nosniff' },
-  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()' },
-];
+  return [
+    { key: 'Content-Security-Policy', value: csp },
+    { key: 'X-Frame-Options', value: 'DENY' },
+    { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+    { key: 'X-Content-Type-Options', value: 'nosniff' },
+    { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()' },
+  ];
+}
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -42,17 +53,23 @@ const nextConfig = {
       { protocol: 'https', hostname: '**.googleusercontent.com' },
     ],
   },
-  async headers() {
-    return [{ source: '/(.*)', headers: SECURITY_HEADERS }];
-  },
 };
 
 module.exports = (phase) => {
+  const isDev = phase === PHASE_DEVELOPMENT_SERVER;
+
+  const withHeaders = {
+    ...nextConfig,
+    async headers() {
+      return [{ source: '/(.*)', headers: buildSecurityHeaders(isDev) }];
+    },
+  };
+
   const config =
     phase !== PHASE_DEVELOPMENT_SERVER
-      ? nextConfig
+      ? withHeaders
       : {
-          ...nextConfig,
+          ...withHeaders,
           // Dev server only: by default Next.js garbage-collects a compiled
           // route's entry after 60s idle, or once more than 5 *other* routes
           // have been visited (pagesBufferLength) — recompiling it fresh, with
