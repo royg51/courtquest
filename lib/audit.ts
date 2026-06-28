@@ -19,6 +19,7 @@ export type AuditAction =
   | 'MATCH_SCORE_UPDATED'
   | 'MATCH_SCHEDULED'
   | 'COURTS_AUTO_ASSIGNED'
+  | 'TEAMS_AUTO_SEEDED'
   | 'BRACKET_GENERATED';
 
 export type AuditEntityType = 'USER' | 'TOURNAMENT' | 'MATCH' | 'BRACKET';

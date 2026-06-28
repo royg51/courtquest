@@ -9,6 +9,9 @@ import { CopyLinkButton } from '@/components/organizer/CopyLinkButton';
 import { GenerateBracketButton } from '@/components/organizer/GenerateBracketButton';
 import { UpdateStatusButton } from '@/components/organizer/UpdateStatusButton';
 import InviteCodePanel from '@/components/organizer/InviteCodePanel';
+import SmartAssistPanel from '@/components/organizer/SmartAssistPanel';
+import { getAssistSummary } from '@/lib/ai-assist';
+import { generateFormatAdvice } from '@/lib/ai';
 import { FORMATS } from '@/lib/sports';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
@@ -38,6 +41,17 @@ export default async function OrganizerTournamentPage({
     ? await getTournamentRevenue(tournament.id)
     : null;
 
+  // Smart Assist is only useful before the bracket is drawn.
+  const assistSummary = tournament.bracket ? null : await getAssistSummary(tournament.id);
+  const aiAdvice =
+    assistSummary && assistSummary.confirmedTeams >= 2
+      ? await generateFormatAdvice({
+          sport: tournament.sport,
+          teamCount: assistSummary.confirmedTeams,
+          entryType: tournament.entryType,
+        })
+      : null;
+
   return (
     <main className="mx-auto max-w-2xl px-4 py-8">
       <div className="flex items-center justify-between">
@@ -58,6 +72,15 @@ export default async function OrganizerTournamentPage({
         appUrl={APP_URL}
         allowGuestRegistration={tournament.allowGuestRegistration}
       />
+
+      {assistSummary && (
+        <SmartAssistPanel
+          tournamentId={tournament.id}
+          summary={assistSummary}
+          hasBracket={!!tournament.bracket}
+          aiAdvice={aiAdvice}
+        />
+      )}
 
       <dl className="mt-6 grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
         <div>
