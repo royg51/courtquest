@@ -78,7 +78,9 @@ model User {
   accounts             Account[]
   sessions             Session[]
   teamMembers          TeamMember[]
+  permanentTeamMembers PermanentTeamMember[]
   tournamentsOrganized Tournament[]
+  auditLogs            AuditLog[]
   createdAt            DateTime     @default(now())
   updatedAt            DateTime     @updatedAt
 }
@@ -101,11 +103,21 @@ model Tournament {
   maxParticipants      Int
   minParticipants      Int        @default(4)
   teamSize             Int        @default(1)
+  // entryType: SOLO | TEAM — drives teamSize (1 vs 2). Stored explicitly so
+  // the create/edit UI and registration flow can branch on intent rather
+  // than inferring it from teamSize.
+  entryType            String     @default("SOLO")
+  numberOfCourts       Int        @default(1)
   entryFeeCents        Int        @default(0)
   requiresPayment      Boolean    @default(false)
   venue                String?
   address              String?
   isPublic             Boolean    @default(true)
+  // When true, people without an account can register (guest registration).
+  // inviteCode is a short shareable "join with code" token; nullable until an
+  // organizer generates one, unique so a code maps to exactly one tournament.
+  allowGuestRegistration Boolean  @default(false)
+  inviteCode           String?    @unique
   teams                Team[]
   bracket              Bracket?
   donations            Donation[]
@@ -123,9 +135,21 @@ model Team {
   tournament      Tournament   @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   name            String
   seed            Int?
+  // Final standing once the tournament completes: 1 = champion, 2 = runner-up,
+  // etc. Set by the format-specific completion logic (final-match winner for
+  // elimination, standings order for round robin). Rankings read this instead
+  // of inferring "champion/finalist" from bracket shape, so points are correct
+  // regardless of format. Null until the tournament finishes.
+  placement       Int?
   status          String       @default("PENDING")
   paymentStatus   String       @default("UNPAID")
   stripePaymentId String?
+  // Set when this tournament registration was made on behalf of an existing
+  // permanent team (its accepted roster copied in directly, no per-tournament
+  // invite needed) rather than as a one-off, tournament-only team. SetNull so
+  // deleting the permanent team later doesn't erase tournament history.
+  permanentTeamId String?
+  permanentTeam   PermanentTeam? @relation(fields: [permanentTeamId], references: [id], onDelete: SetNull)
   members         TeamMember[]
   matchesAsA      Match[]      @relation("TeamA")
   matchesAsB      Match[]      @relation("TeamB")
@@ -134,6 +158,10 @@ model Team {
 }
 
 // skillLevel: BEGINNER | INTERMEDIATE | ADVANCE_INTERMEDIATE | ADVANCED
+// inviteStatus: PENDING | ACCEPTED | DECLINED. Defaults to ACCEPTED since
+// every pre-existing path (the primary registrant, a guest partner someone
+// else filled in) needs no acceptance step — PENDING/DECLINED only apply to
+// the invite-by-email path (see lib/invites.ts), where inviteToken is set.
 model TeamMember {
   id             String  @id @default(cuid())
   teamId         String
@@ -147,6 +175,38 @@ model TeamMember {
   guestPhone     String?
   skillLevel     String?
   waiverAccepted Boolean @default(false)
+  inviteStatus   String  @default("ACCEPTED")
+  inviteToken    String? @unique
+
+  @@index([userId])
+}
+
+// A roster that exists independent of any one tournament — players create
+// one once and reuse it to register for tournaments without re-inviting
+// teammates each time (see Team.permanentTeamId). A one-off, tournament-only
+// team (the original/default registration path) has no PermanentTeam at all.
+model PermanentTeam {
+  id        String                @id @default(cuid())
+  name      String
+  sport     String
+  createdAt DateTime              @default(now())
+  members   PermanentTeamMember[]
+  teams     Team[]
+}
+
+// inviteStatus: PENDING | ACCEPTED | DECLINED — same invite-by-email flow as
+// TeamMember, reused for permanent-team membership (see lib/invites.ts).
+model PermanentTeamMember {
+  id              String        @id @default(cuid())
+  permanentTeamId String
+  permanentTeam   PermanentTeam @relation(fields: [permanentTeamId], references: [id], onDelete: Cascade)
+  userId          String?
+  user            User?         @relation(fields: [userId], references: [id])
+  isPrimary       Boolean       @default(false)
+  guestEmail      String?
+  inviteStatus    String        @default("ACCEPTED")
+  inviteToken     String?       @unique
+  joinedAt        DateTime      @default(now())
 
   @@index([userId])
 }
@@ -193,6 +253,39 @@ model Match {
   nextMatch    Match?    @relation("Advancement", fields: [nextMatchId], references: [id])
   fedByMatches Match[]   @relation("Advancement")
   isSlotA      Boolean   @default(true)
+}
+
+// Append-only audit trail for privileged/destructive actions (role changes,
+// score overrides, bracket generation, tournament edits/deletes). Never
+// updated or deleted in normal operation — it's the "who changed what, when,
+// from what to what" record that makes the platform trustworthy and lets an
+// admin investigate disputes or suspected tampering.
+//
+// action:     ROLE_CHANGED | TOURNAMENT_UPDATED | TOURNAMENT_DELETED |
+//             MATCH_SCORE_UPDATED | BRACKET_GENERATED
+// entityType: USER | TOURNAMENT | MATCH | BRACKET
+model AuditLog {
+  id         String   @id @default(cuid())
+  // Who performed the action. Nullable + SetNull so deleting a user never
+  // erases or blocks reading their historical actions (the log outlives the
+  // actor); actorEmail keeps a human-readable record even after that.
+  actorId    String?
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  actorEmail String?
+  action     String
+  entityType String
+  entityId   String?
+  // Before/after snapshots of just the changed fields (not whole rows) +
+  // freeform context (e.g. tournamentId, ip). Json so each action can store
+  // the shape that's meaningful for it without a column explosion.
+  before     Json?
+  after      Json?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@index([createdAt])
 }
 
 model Donation {

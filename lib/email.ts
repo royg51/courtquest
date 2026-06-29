@@ -14,7 +14,9 @@ import {
   matchReadyEmail,
   paymentConfirmationEmail,
   organizerNewRegistrationEmail,
+  tournamentStartedEmail,
   tournamentResultsEmail,
+  teamInviteEmail,
 } from '@/lib/email/templates';
 
 let _resend: Resend | null = null;
@@ -107,6 +109,27 @@ export async function sendOrganizerNewRegistrationNotification(opts: {
 }) {
   const { subject, html } = organizerNewRegistrationEmail(opts);
   await send({ to: opts.to, subject, html, tag: 'organizer-new-registration' });
+}
+
+export async function sendTournamentStarted(opts: {
+  to: string;
+  name: string;
+  tournamentName: string;
+  tournamentSlug: string;
+}) {
+  const { subject, html } = tournamentStartedEmail(opts);
+  await send({ to: opts.to, subject, html, tag: 'tournament-started' });
+}
+
+export async function sendTeamInvite(opts: {
+  to: string;
+  inviterName: string;
+  teamName: string;
+  context: string;
+  acceptUrl: string;
+}) {
+  const { subject, html } = teamInviteEmail(opts);
+  await send({ to: opts.to, subject, html, tag: 'team-invite' });
 }
 
 export async function sendTournamentResults(opts: {

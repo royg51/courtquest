@@ -30,6 +30,7 @@ const DEFAULTS = {
   checkout: { limit: 10, windowSeconds: 60 },
   tournamentCreate: { limit: 10, windowSeconds: 60 * 60 },
   registration: { limit: 20, windowSeconds: 60 * 60 },
+  inviteSend: { limit: 20, windowSeconds: 60 * 60 },
 } as const;
 
 function envConfig(prefix: string, fallback: RateLimitConfig): RateLimitConfig {
@@ -48,6 +49,7 @@ export const RATE_LIMIT_CONFIG = {
   checkout: envConfig('RATE_LIMIT_CHECKOUT', DEFAULTS.checkout),
   tournamentCreate: envConfig('RATE_LIMIT_TOURNAMENT_CREATE', DEFAULTS.tournamentCreate),
   registration: envConfig('RATE_LIMIT_REGISTRATION', DEFAULTS.registration),
+  inviteSend: envConfig('RATE_LIMIT_INVITE_SEND', DEFAULTS.inviteSend),
 };
 
 function isUpstashConfigured(): boolean {

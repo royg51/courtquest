@@ -3,11 +3,17 @@
 
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
-import { registerTeamSchema, type RegisterTeamInput } from '@/lib/schemas/team';
+import {
+  registerTeamSchema,
+  guestRegisterTeamSchema,
+  type RegisterTeamInput,
+  type GuestRegisterTeamInput,
+} from '@/lib/schemas/team';
 import { TextField } from '@/components/ui/TextField';
 import { useRegisterTeam } from '@/hooks/useRegistration';
 
@@ -17,6 +23,8 @@ interface Props {
   teamSize: 1 | 2;
   requiresPayment: boolean;
   entryFeeCents: number;
+  guestMode?: boolean;
+  myPermanentTeams?: Array<{ id: string; name: string }>;
 }
 
 const SKILL_LEVELS = [
@@ -26,30 +34,57 @@ const SKILL_LEVELS = [
   { value: 'ADVANCED', label: 'Advanced' },
 ];
 
+// In guest mode the form carries the registrant's own contact fields under
+// guestPrimary; the resolver type widens to the guest schema accordingly.
+type FormValues = RegisterTeamInput & Partial<GuestRegisterTeamInput>;
+
 export default function RegistrationForm({
   tournamentId,
   tournamentSlug,
   teamSize,
   requiresPayment,
   entryFeeCents,
+  guestMode = false,
+  myPermanentTeams = [],
 }: Props) {
   const router = useRouter();
   const registerTeam = useRegisterTeam(tournamentId);
+  const [partnerMode, setPartnerMode] = useState<'guest' | 'invite'>('guest');
+  const [permanentTeamId, setPermanentTeamId] = useState('');
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<RegisterTeamInput>({ resolver: zodResolver(registerTeamSchema) });
+  } = useForm<FormValues>({
+    resolver: zodResolver(guestMode ? guestRegisterTeamSchema : registerTeamSchema),
+  });
 
-  const onSubmit = async (data: RegisterTeamInput) => {
+  const onSubmit = async (data: FormValues) => {
     try {
-      await registerTeam.mutateAsync(teamSize === 2 ? data : { ...data, partner: undefined });
-      toast.success("You're registered!");
+      let payload: FormValues = teamSize === 2 ? data : { ...data, partner: undefined };
+      if (permanentTeamId) {
+        payload = { ...payload, permanentTeamId, partner: undefined };
+      } else if (teamSize === 2 && payload.partner) {
+        payload =
+          partnerMode === 'invite'
+            ? { ...payload, partner: { inviteEmail: payload.partner.inviteEmail } }
+            : { ...payload, partner: { ...payload.partner, inviteEmail: undefined } };
+      }
+      await registerTeam.mutateAsync(payload as RegisterTeamInput | GuestRegisterTeamInput);
+      toast.success(
+        permanentTeamId || partnerMode === 'guest' || teamSize === 1
+          ? "You're registered!"
+          : "You're registered! Your partner will get an email to confirm their spot."
+      );
       router.push(`/tournaments/${tournamentSlug}`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to register');
     }
+  };
+
+  const guestErrors = errors as Record<string, { message?: string } | undefined> & {
+    guestPrimary?: { guestName?: { message?: string }; guestEmail?: { message?: string } };
   };
 
   return (
@@ -59,6 +94,25 @@ export default function RegistrationForm({
           Entry fee: ${(entryFeeCents / 100).toFixed(2)} — pay onsite or as arranged with the
           organizer.
         </div>
+      )}
+
+      {guestMode && (
+        <fieldset className="space-y-3 rounded-md border border-gray-200 p-3 dark:border-gray-800">
+          <legend className="px-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+            Your details
+          </legend>
+          <TextField
+            label="Your name"
+            error={guestErrors.guestPrimary?.guestName?.message}
+            {...register('guestPrimary.guestName')}
+          />
+          <TextField
+            label="Your email (optional, for confirmation)"
+            type="email"
+            error={guestErrors.guestPrimary?.guestEmail?.message}
+            {...register('guestPrimary.guestEmail')}
+          />
+        </fieldset>
       )}
 
       <TextField label="Team name" error={errors.teamName?.message} {...register('teamName')} />
@@ -89,20 +143,76 @@ export default function RegistrationForm({
         )}
       </div>
 
-      {teamSize === 2 && (
+      {teamSize === 2 && myPermanentTeams.length > 0 && (
+        <div>
+          <label htmlFor="permanentTeamId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Register as a saved team (optional)
+          </label>
+          <select
+            id="permanentTeamId"
+            value={permanentTeamId}
+            onChange={(e) => setPermanentTeamId(e.target.value)}
+            className="mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/40 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          >
+            <option value="">Don&apos;t use a saved team</option>
+            {myPermanentTeams.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {teamSize === 2 && !permanentTeamId && (
         <fieldset className="space-y-3 rounded-md border border-gray-200 p-3 dark:border-gray-800">
           <legend className="px-1 text-sm font-medium text-gray-700 dark:text-gray-300">Partner</legend>
-          <TextField
-            label="Partner name"
-            error={errors.partner?.guestName?.message}
-            {...register('partner.guestName')}
-          />
-          <TextField
-            label="Partner email (optional)"
-            type="email"
-            error={errors.partner?.guestEmail?.message}
-            {...register('partner.guestEmail')}
-          />
+
+          {!guestMode && (
+            <div className="flex gap-4 text-sm text-gray-700 dark:text-gray-300">
+              <label className="flex items-center gap-1.5">
+                <input
+                  type="radio"
+                  checked={partnerMode === 'guest'}
+                  onChange={() => setPartnerMode('guest')}
+                  className="h-4 w-4 text-brand-600 focus:ring-brand-500/40"
+                />
+                Fill in their info
+              </label>
+              <label className="flex items-center gap-1.5">
+                <input
+                  type="radio"
+                  checked={partnerMode === 'invite'}
+                  onChange={() => setPartnerMode('invite')}
+                  className="h-4 w-4 text-brand-600 focus:ring-brand-500/40"
+                />
+                Invite by email
+              </label>
+            </div>
+          )}
+
+          {partnerMode === 'invite' && !guestMode ? (
+            <TextField
+              label="Partner's email"
+              type="email"
+              error={errors.partner?.inviteEmail?.message}
+              {...register('partner.inviteEmail')}
+            />
+          ) : (
+            <>
+              <TextField
+                label="Partner name"
+                error={errors.partner?.guestName?.message}
+                {...register('partner.guestName')}
+              />
+              <TextField
+                label="Partner email (optional)"
+                type="email"
+                error={errors.partner?.guestEmail?.message}
+                {...register('partner.guestEmail')}
+              />
+            </>
+          )}
         </fieldset>
       )}
 

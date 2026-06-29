@@ -41,15 +41,26 @@ export class RegistrationError extends Error {
   }
 }
 
+// The primary registrant is either a logged-in user (userId) or a guest
+// (name + optional contact). Exactly one must be provided — the API route
+// picks based on whether there's a session and whether the tournament allows
+// guest registration.
+export type PrimaryRegistrant =
+  | { userId: string }
+  | { guestName: string; guestEmail?: string; guestPhone?: string };
+
 export async function registerTeam(
   tournamentId: string,
   data: {
-    primaryUserId: string;
+    primary: PrimaryRegistrant;
     teamName: string;
     skillLevel: string;
     waiverAccepted: boolean;
+    // Registering on behalf of an existing permanent team copies its
+    // current accepted roster in directly (already-consented members, no
+    // per-tournament invite needed) instead of using `partner` at all.
+    permanentTeamId?: string;
     partner?: {
-      userId?: string;
       guestName?: string;
       guestEmail?: string;
       guestPhone?: string;
@@ -64,14 +75,30 @@ export async function registerTeam(
     throw new RegistrationError('REGISTRATION_CLOSED', 'Registration is not open for this tournament');
   }
 
-  const alreadyRegistered = await db.teamMember.findFirst({
-    where: {
-      userId: data.primaryUserId,
-      team: { tournamentId, status: { not: 'WITHDRAWN' } },
-    },
-  });
-  if (alreadyRegistered) {
-    throw new RegistrationError('ALREADY_REGISTERED', 'You are already registered for this tournament');
+  const primary = data.primary;
+
+  // Dedup: logged-in users by userId; guests by email (best effort — a guest
+  // with no email can't be reliably deduped, so we allow it).
+  if ('userId' in primary) {
+    const alreadyRegistered = await db.teamMember.findFirst({
+      where: { userId: primary.userId, team: { tournamentId, status: { not: 'WITHDRAWN' } } },
+    });
+    if (alreadyRegistered) {
+      throw new RegistrationError('ALREADY_REGISTERED', 'You are already registered for this tournament');
+    }
+  } else if (primary.guestEmail) {
+    const guestAlready = await db.teamMember.findFirst({
+      where: {
+        guestEmail: primary.guestEmail,
+        team: { tournamentId, status: { not: 'WITHDRAWN' } },
+      },
+    });
+    if (guestAlready) {
+      throw new RegistrationError(
+        'ALREADY_REGISTERED',
+        'A registration with this email already exists for this tournament'
+      );
+    }
   }
 
   const activeTeamCount = await db.team.count({
@@ -79,23 +106,52 @@ export async function registerTeam(
   });
   const status = activeTeamCount >= tournament.maxParticipants ? 'WAITLISTED' : 'CONFIRMED';
 
+  const primaryMember =
+    'userId' in primary
+      ? { userId: primary.userId, isPrimary: true, skillLevel: data.skillLevel, waiverAccepted: data.waiverAccepted }
+      : {
+          guestName: primary.guestName,
+          guestEmail: primary.guestEmail,
+          guestPhone: primary.guestPhone,
+          isPrimary: true,
+          skillLevel: data.skillLevel,
+          waiverAccepted: data.waiverAccepted,
+        };
+
+  let permanentRosterMembers: Array<{ userId: string; waiverAccepted: boolean }> = [];
+  if (data.permanentTeamId) {
+    const requestingUserId = 'userId' in primary ? primary.userId : null;
+    if (!requestingUserId) {
+      throw new RegistrationError('FORBIDDEN', 'Only logged-in users can register a permanent team');
+    }
+    const permanentTeam = await db.permanentTeam.findUnique({
+      where: { id: data.permanentTeamId },
+      include: { members: { where: { inviteStatus: 'ACCEPTED' } } },
+    });
+    if (!permanentTeam || !permanentTeam.members.some((m) => m.userId === requestingUserId)) {
+      throw new RegistrationError('FORBIDDEN', 'You are not a member of this team');
+    }
+    // The requesting user is already the primary member above — copy in
+    // everyone else's accepted membership directly, no per-tournament
+    // invite needed since they already consented at the team level.
+    permanentRosterMembers = permanentTeam.members
+      .filter((m) => m.userId && m.userId !== requestingUserId)
+      .map((m) => ({ userId: m.userId!, waiverAccepted: data.waiverAccepted }));
+  }
+
   return db.team.create({
     data: {
       tournamentId,
       name: data.teamName,
       status,
+      permanentTeamId: data.permanentTeamId,
       members: {
         create: [
-          {
-            userId: data.primaryUserId,
-            isPrimary: true,
-            skillLevel: data.skillLevel,
-            waiverAccepted: data.waiverAccepted,
-          },
+          primaryMember,
+          ...permanentRosterMembers.map((m) => ({ ...m, isPrimary: false })),
           ...(data.partner
             ? [
                 {
-                  userId: data.partner.userId,
                   guestName: data.partner.guestName,
                   guestEmail: data.partner.guestEmail,
                   guestPhone: data.partner.guestPhone,

@@ -6,7 +6,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Users, Trophy, Target, TrendingUp, Compass, Settings } from 'lucide-react';
+import { Users, Trophy, Target, TrendingUp, Compass, Settings, Shield } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { getJoinedTeams, getUpcomingMatchesForUser, getRecentResultsForUser } from '@/lib/dashboard';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -68,6 +68,13 @@ export default async function DashboardPage() {
         >
           <Compass className="h-4 w-4" aria-hidden="true" />
           Browse Tournaments
+        </Link>
+        <Link
+          href="/dashboard/teams"
+          className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500/40 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+        >
+          <Shield className="h-4 w-4" aria-hidden="true" />
+          My Teams
         </Link>
         {isOrganizer && (
           <Link
