@@ -16,11 +16,6 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ tournaments });
 }
 
-// MVP shortcut: the creation form only collects name/description/sport/maxParticipants.
-// Dates aren't user-editable yet, so we default them to a sensible 2-week-out
-// window here; PUT /api/tournaments/[id] is the place to let organizers change them.
-const DAY_MS = 24 * 60 * 60 * 1000;
-
 export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session?.user || !requireRole(session, 'ORGANIZER')) {
@@ -49,26 +44,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const now = Date.now();
-  const startDate = new Date(now + 14 * DAY_MS);
-  const endDate = new Date(now + 15 * DAY_MS);
-  const registrationDeadline = new Date(now + 7 * DAY_MS);
-
-  const entryFeeCents = Math.round((parsed.data.entryFeeDollars ?? 0) * 100);
-
-  const tournament = await createTournament(session.user.id, {
-    name: parsed.data.name,
-    description: parsed.data.description,
-    sport: parsed.data.sport,
-    format: 'SINGLE_ELIM',
-    teamSize: 1,
-    startDate,
-    endDate,
-    registrationDeadline,
-    maxParticipants: parsed.data.maxParticipants,
-    entryFeeCents,
-    requiresPayment: entryFeeCents > 0,
-  });
+  const tournament = await createTournament(session.user.id, parsed.data);
 
   return NextResponse.json({ tournament }, { status: 201 });
 }

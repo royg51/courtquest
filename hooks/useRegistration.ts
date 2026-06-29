@@ -3,7 +3,7 @@
 // these call are keyed by id.
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { RegisterTeamInput } from '@/lib/schemas/team';
+import type { RegisterTeamInput, GuestRegisterTeamInput } from '@/lib/schemas/team';
 import type { TeamWithMembers } from '@/lib/teams';
 
 export function useTeams(tournamentId: string) {
@@ -21,7 +21,7 @@ export function useTeams(tournamentId: string) {
 export function useRegisterTeam(tournamentId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: RegisterTeamInput) => {
+    mutationFn: async (data: RegisterTeamInput | GuestRegisterTeamInput) => {
       const res = await fetch(`/api/tournaments/${tournamentId}/teams`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

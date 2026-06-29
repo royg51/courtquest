@@ -2,6 +2,7 @@
 
 import { useBracket } from '@/hooks/useBracket';
 import BracketViewer from './BracketViewer';
+import DoubleEliminationView, { getDoubleEliminationChampion } from './DoubleEliminationView';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Network, Trophy } from 'lucide-react';
 
@@ -35,12 +36,19 @@ export default function PublicBracketView({ tournamentId, isLive }: Props) {
     .flatMap((round) => round.matches.map((match) => ({ ...match, roundName: round.name })))
     .filter((match) => match.status === 'COMPLETED');
 
-  const finalsRound = bracket.rounds[bracket.rounds.length - 1];
-  const champion = finalsRound?.matches[0]?.winnerId
-    ? finalsRound.matches[0].teamA?.id === finalsRound.matches[0].winnerId
-      ? finalsRound.matches[0].teamA
-      : finalsRound.matches[0].teamB
-    : null;
+  const isDoubleElim = bracket.rounds.some((round) => round.bracketSide !== 'MAIN');
+
+  let champion = null;
+  if (isDoubleElim) {
+    champion = getDoubleEliminationChampion(bracket);
+  } else {
+    const finalsRound = bracket.rounds[bracket.rounds.length - 1];
+    champion = finalsRound?.matches[0]?.winnerId
+      ? finalsRound.matches[0].teamA?.id === finalsRound.matches[0].winnerId
+        ? finalsRound.matches[0].teamA
+        : finalsRound.matches[0].teamB
+      : null;
+  }
 
   return (
     <div className="space-y-10">
@@ -51,7 +59,11 @@ export default function PublicBracketView({ tournamentId, isLive }: Props) {
         </div>
       )}
 
-      <BracketViewer bracket={bracket} mode="public" />
+      {isDoubleElim ? (
+        <DoubleEliminationView bracket={bracket} mode="public" />
+      ) : (
+        <BracketViewer bracket={bracket} mode="public" />
+      )}
 
       <div>
         <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">

@@ -12,6 +12,13 @@ export async function listUsers() {
   });
 }
 
+export async function getUserById(userId: string) {
+  return db.user.findUnique({
+    where: { id: userId },
+    select: { id: true, name: true, email: true, role: true },
+  });
+}
+
 export async function updateUserRole(userId: string, role: Role) {
   return db.user.update({ where: { id: userId }, data: { role } });
 }

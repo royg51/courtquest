@@ -3,6 +3,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useBracket } from '@/hooks/useBracket';
 import BracketViewer from './BracketViewer';
+import DoubleEliminationView from './DoubleEliminationView';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Network } from 'lucide-react';
 
@@ -32,11 +33,12 @@ export default function OrganizerBracketView({ tournamentId }: Props) {
     );
   }
 
-  return (
-    <BracketViewer
-      bracket={bracket}
-      mode="organizer"
-      onScoreSubmit={() => queryClient.invalidateQueries({ queryKey: ['bracket', tournamentId] })}
-    />
+  const isDoubleElim = bracket.rounds.some((round) => round.bracketSide !== 'MAIN');
+  const onScoreSubmit = () => queryClient.invalidateQueries({ queryKey: ['bracket', tournamentId] });
+
+  return isDoubleElim ? (
+    <DoubleEliminationView bracket={bracket} mode="organizer" onScoreSubmit={onScoreSubmit} />
+  ) : (
+    <BracketViewer bracket={bracket} mode="organizer" onScoreSubmit={onScoreSubmit} />
   );
 }

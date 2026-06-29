@@ -12,6 +12,7 @@
 //   8. Persist everything in a single Prisma transaction
 
 import { db } from '@/lib/db';
+import { sendTournamentStarted } from '@/lib/email';
 import type { BracketTree, MatchStatus } from '@/types';
 
 export class BracketError extends Error {
@@ -40,7 +41,7 @@ export function roundName(roundsFromFinal: number): string {
 // Standard bracket seeding order (1 vs N, 2 vs N-1, recursively applied to
 // each half) so that bye slots — which always number fewer than size/2 —
 // land in distinct first-round matches instead of clustering together.
-function seedOrder(size: number): number[] {
+export function seedOrder(size: number): number[] {
   if (size === 1) return [1];
   const prev = seedOrder(size / 2);
   const result: number[] = [];
@@ -146,6 +147,35 @@ export async function generateSingleEliminationBracket(tournamentId: string) {
   });
 }
 
+// Emails every registered participant that the bracket is drawn and play has
+// started. Non-blocking by design (each send swallows its own errors) — called
+// after a bracket is generated, for any format.
+export async function notifyTournamentStarted(tournamentId: string): Promise<void> {
+  const tournament = await db.tournament.findUnique({
+    where: { id: tournamentId },
+    select: {
+      name: true,
+      slug: true,
+      teams: { include: { members: { include: { user: true } } } },
+    },
+  });
+  if (!tournament) return;
+
+  for (const team of tournament.teams) {
+    for (const member of team.members) {
+      const to = member.user?.email ?? member.guestEmail;
+      const name = member.user?.name ?? member.guestName;
+      if (!to || !name) continue;
+      await sendTournamentStarted({
+        to,
+        name,
+        tournamentName: tournament.name,
+        tournamentSlug: tournament.slug,
+      });
+    }
+  }
+}
+
 // Returns the bracket tree denormalized for the frontend
 export async function getBracketTree(tournamentId: string): Promise<BracketTree | null> {
   const bracket = await db.bracket.findUnique({
@@ -175,6 +205,8 @@ export async function getBracketTree(tournamentId: string): Promise<BracketTree 
       id: round.id,
       number: round.number,
       name: round.name,
+      bracketSide: round.bracketSide,
+      isBracketReset: round.isBracketReset,
       matches: round.matches.map((match) => ({
         id: match.id,
         status: match.status as MatchStatus,

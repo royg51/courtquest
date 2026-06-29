@@ -154,6 +154,23 @@ export function organizerNewRegistrationEmail(opts: {
   return { subject, html };
 }
 
+export function tournamentStartedEmail(opts: {
+  name: string;
+  tournamentName: string;
+  tournamentSlug: string;
+}) {
+  const subject = `${opts.tournamentName} is starting`;
+  const html = layout({
+    preheader: `The bracket for ${opts.tournamentName} is live.`,
+    bodyHtml: `
+      <p>Hi ${opts.name},</p>
+      <p>The bracket for <strong>${opts.tournamentName}</strong> has been drawn and play is underway. Check your first match and follow along live.</p>
+      ${button('View live bracket', `${APP_URL}/tournaments/${opts.tournamentSlug}/live`)}
+    `,
+  });
+  return { subject, html };
+}
+
 export function tournamentResultsEmail(opts: {
   name: string;
   tournamentName: string;
