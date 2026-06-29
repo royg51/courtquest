@@ -5,8 +5,10 @@
 export type Role = 'PLAYER' | 'ORGANIZER' | 'ADMIN';
 
 export type TournamentStatus = 'DRAFT' | 'OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
-export type TournamentFormat = 'SINGLE_ELIM' | 'DOUBLE_ELIM' | 'ROUND_ROBIN' | 'SWISS';
-export type TeamStatus = 'PENDING' | 'CONFIRMED' | 'WAITLISTED' | 'WITHDRAWN';
+export type TournamentFormat = 'SINGLE_ELIM' | 'DOUBLE_ELIM' | 'ROUND_ROBIN' | 'SWISS' | 'GROUP_STAGE';
+// ELIMINATED is system-set only (a group-stage team that didn't qualify for
+// playoffs) — never a manual organizer transition.
+export type TeamStatus = 'PENDING' | 'CONFIRMED' | 'WAITLISTED' | 'WITHDRAWN' | 'ELIMINATED';
 export type MatchStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'BYE';
 export type SkillLevel = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCE_INTERMEDIATE' | 'ADVANCED';
 
@@ -18,13 +20,16 @@ export interface BracketTree {
 }
 
 // bracketSide is 'MAIN' for single-elim/round-robin, or
-// 'WINNERS' | 'LOSERS' | 'GRAND_FINALS' for double elimination.
+// 'WINNERS' | 'LOSERS' | 'GRAND_FINALS' for double elimination. groupNumber
+// is set only for a group-stage round's group-play rounds — null (including
+// for that same tournament's later playoff rounds, which share the bracket).
 export interface RoundWithMatches {
   id: string;
   number: number;
   name: string;
   bracketSide: string;
   isBracketReset: boolean;
+  groupNumber: number | null;
   matches: MatchWithTeams[];
 }
 

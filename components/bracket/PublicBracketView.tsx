@@ -3,6 +3,7 @@
 import { useBracket } from '@/hooks/useBracket';
 import BracketViewer from './BracketViewer';
 import DoubleEliminationView, { getDoubleEliminationChampion } from './DoubleEliminationView';
+import GroupStageMatchesView from './GroupStageMatchesView';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Network, Trophy } from 'lucide-react';
 
@@ -36,13 +37,21 @@ export default function PublicBracketView({ tournamentId, isLive }: Props) {
     .flatMap((round) => round.matches.map((match) => ({ ...match, roundName: round.name })))
     .filter((match) => match.status === 'COMPLETED');
 
-  const isDoubleElim = bracket.rounds.some((round) => round.bracketSide !== 'MAIN');
+  // Group stage's playoff phase shares its tournament's one Bracket row with
+  // the group-play rounds that preceded it (group standings render those
+  // separately, above) — group-play rounds (groupNumber set) are excluded
+  // here so the elimination viewer only ever sees a real elimination shape.
+  // A no-op filter for every other format, where groupNumber is always null.
+  const playoffRounds = bracket.rounds.filter((round) => round.groupNumber === null);
+  const playoffBracket = { ...bracket, rounds: playoffRounds };
+
+  const isDoubleElim = playoffRounds.some((round) => round.bracketSide !== 'MAIN');
 
   let champion = null;
   if (isDoubleElim) {
-    champion = getDoubleEliminationChampion(bracket);
+    champion = getDoubleEliminationChampion(playoffBracket);
   } else {
-    const finalsRound = bracket.rounds[bracket.rounds.length - 1];
+    const finalsRound = playoffRounds[playoffRounds.length - 1];
     champion = finalsRound?.matches[0]?.winnerId
       ? finalsRound.matches[0].teamA?.id === finalsRound.matches[0].winnerId
         ? finalsRound.matches[0].teamA
@@ -59,11 +68,14 @@ export default function PublicBracketView({ tournamentId, isLive }: Props) {
         </div>
       )}
 
-      {isDoubleElim ? (
-        <DoubleEliminationView bracket={bracket} mode="public" />
-      ) : (
-        <BracketViewer bracket={bracket} mode="public" />
-      )}
+      <GroupStageMatchesView bracket={bracket} mode="public" />
+
+      {playoffRounds.length > 0 &&
+        (isDoubleElim ? (
+          <DoubleEliminationView bracket={playoffBracket} mode="public" />
+        ) : (
+          <BracketViewer bracket={playoffBracket} mode="public" />
+        ))}
 
       <div>
         <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">

@@ -115,7 +115,13 @@ export async function createGrandFinalReset(
   });
 }
 
-export async function generateDoubleEliminationBracket(tournamentId: string) {
+// `existingBracketId` lets a compound format (group stage → playoffs) hand
+// this generator an already-created Bracket row to add rounds to — see the
+// matching comment on generateSingleEliminationBracket in lib/bracket.ts.
+export async function generateDoubleEliminationBracket(
+  tournamentId: string,
+  options?: { existingBracketId?: string }
+) {
   const tournament = await db.tournament.findUnique({
     where: { id: tournamentId },
     include: {
@@ -128,7 +134,7 @@ export async function generateDoubleEliminationBracket(tournamentId: string) {
   });
 
   if (!tournament) throw new BracketError('NOT_FOUND', 'Tournament not found');
-  if (tournament.bracket) {
+  if (!options?.existingBracketId && tournament.bracket) {
     throw new BracketError('ALREADY_EXISTS', 'Bracket already generated for this tournament');
   }
   if (tournament.teams.length < 2) {
@@ -150,7 +156,9 @@ export async function generateDoubleEliminationBracket(tournamentId: string) {
   // can exceed Prisma's 5s default interactive-transaction timeout, so it's
   // raised explicitly here.
   return db.$transaction(async (tx) => {
-    const bracket = await tx.bracket.create({ data: { tournamentId } });
+    const bracket = options?.existingBracketId
+      ? { id: options.existingBracketId }
+      : await tx.bracket.create({ data: { tournamentId } });
 
     // ---------- Winners bracket ----------
     const wbMatchIds: string[][] = []; // wbMatchIds[r-1][m]

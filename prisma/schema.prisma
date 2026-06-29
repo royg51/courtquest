@@ -84,7 +84,7 @@ model User {
   updatedAt            DateTime     @updatedAt
 }
 
-// format: SINGLE_ELIM | DOUBLE_ELIM | ROUND_ROBIN | SWISS
+// format: SINGLE_ELIM | DOUBLE_ELIM | ROUND_ROBIN | SWISS | GROUP_STAGE
 // status: DRAFT | OPEN | IN_PROGRESS | COMPLETED | CANCELLED
 model Tournament {
   id                   String     @id @default(cuid())
@@ -117,6 +117,13 @@ model Tournament {
   // organizer generates one, unique so a code maps to exactly one tournament.
   allowGuestRegistration Boolean  @default(false)
   inviteCode           String?    @unique
+  // Group stage only — null for every other format. groupSize is the
+  // organizer-configured target teams-per-group (actual group count is
+  // derived from the confirmed team count at generation time); the rest
+  // configure how the group stage hands off to a playoff bracket.
+  groupSize            Int?
+  qualifiersPerGroup   Int?
+  playoffFormat        String?
   teams                Team[]
   bracket              Bracket?
   donations            Donation[]
@@ -126,7 +133,9 @@ model Tournament {
   @@index([createdAt])
 }
 
-// status: PENDING | CONFIRMED | WAITLISTED | WITHDRAWN
+// status: PENDING | CONFIRMED | WAITLISTED | WITHDRAWN | ELIMINATED
+// (ELIMINATED is system-set only — a group-stage team that didn't qualify
+// for playoffs — never a manual organizer transition; see lib/teams.ts)
 // paymentStatus: UNPAID | PAID | CASH | REFUNDED
 model Team {
   id              String       @id @default(cuid())
@@ -143,6 +152,9 @@ model Team {
   status          String       @default("PENDING")
   paymentStatus   String       @default("UNPAID")
   stripePaymentId String?
+  // Group stage only — which group this team was assigned to. Null for
+  // every other format and for non-qualifying teams once playoffs start.
+  groupNumber     Int?
   members         TeamMember[]
   matchesAsA      Match[]      @relation("TeamA")
   matchesAsB      Match[]      @relation("TeamB")
@@ -187,6 +199,10 @@ model Round {
   name           String
   bracketSide    String  @default("MAIN")
   isBracketReset Boolean @default(false)
+  // Group stage only — which group this round's matches belong to. Null for
+  // every other round (including the playoff rounds a group stage hands off
+  // to, which live in the same Bracket — see lib/formats/group-stage.ts).
+  groupNumber    Int?
   matches        Match[]
 }
 

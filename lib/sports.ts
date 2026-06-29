@@ -14,6 +14,7 @@ export const FORMATS = [
   { value: 'ROUND_ROBIN', label: 'Round Robin', implemented: true },
   { value: 'DOUBLE_ELIM', label: 'Double Elimination', implemented: true },
   { value: 'SWISS', label: 'Swiss', implemented: false },
+  { value: 'GROUP_STAGE', label: 'Group Stage + Playoffs', implemented: true },
 ] as const;
 
 export type TournamentFormatValue = (typeof FORMATS)[number]['value'];

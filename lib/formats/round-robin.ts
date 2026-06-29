@@ -11,6 +11,35 @@
 import { db } from '@/lib/db';
 import { BracketError } from '@/lib/bracket';
 
+// Standard round-robin "circle method": rounds[r] is a set of pairings that
+// can all be played concurrently (no team appears twice in the same round).
+// With an odd count, a phantom bye slot is added; the team paired with it
+// sits that round out (no match is created — exported for reuse by any
+// format that runs round robin within a subgroup of teams, e.g. group stage).
+export function circleMethodRounds(teamIds: string[]): Array<Array<[string, string]>> {
+  const ids: (string | null)[] = [...teamIds];
+  if (ids.length % 2 === 1) ids.push(null);
+
+  const n = ids.length;
+  const roundsCount = n - 1;
+  const half = n / 2;
+
+  const rounds: Array<Array<[string, string]>> = [];
+  let arr = [...ids];
+  for (let r = 0; r < roundsCount; r++) {
+    const pairings: Array<[string, string]> = [];
+    for (let i = 0; i < half; i++) {
+      const a = arr[i];
+      const b = arr[n - 1 - i];
+      if (a !== null && b !== null) pairings.push([a, b]);
+    }
+    rounds.push(pairings);
+    // Rotate, keeping the first element fixed.
+    arr = [arr[0], arr[n - 1], ...arr.slice(1, n - 1)];
+  }
+  return rounds;
+}
+
 export async function generateRoundRobinBracket(tournamentId: string) {
   const tournament = await db.tournament.findUnique({
     where: { id: tournamentId },
@@ -31,29 +60,7 @@ export async function generateRoundRobinBracket(tournamentId: string) {
     throw new BracketError('NOT_ENOUGH_TEAMS', 'Need at least 2 confirmed teams for a round robin');
   }
 
-  // Circle method. Work with team ids; null is the phantom bye slot used when
-  // the count is odd.
-  const ids: (string | null)[] = tournament.teams.map((t) => t.id);
-  if (ids.length % 2 === 1) ids.push(null);
-
-  const n = ids.length;
-  const roundsCount = n - 1;
-  const half = n / 2;
-
-  // rounds[r] = list of [teamAId, teamBId] pairings (excluding bye pairings)
-  const rounds: Array<Array<[string, string]>> = [];
-  let arr = [...ids];
-  for (let r = 0; r < roundsCount; r++) {
-    const pairings: Array<[string, string]> = [];
-    for (let i = 0; i < half; i++) {
-      const a = arr[i];
-      const b = arr[n - 1 - i];
-      if (a !== null && b !== null) pairings.push([a, b]);
-    }
-    rounds.push(pairings);
-    // Rotate, keeping the first element fixed.
-    arr = [arr[0], arr[n - 1], ...arr.slice(1, n - 1)];
-  }
+  const rounds = circleMethodRounds(tournament.teams.map((t) => t.id));
 
   return db.$transaction(async (tx) => {
     const bracket = await tx.bracket.create({ data: { tournamentId } });

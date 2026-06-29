@@ -16,6 +16,8 @@ const STATUS_STYLES: Record<string, string> = {
   CONFIRMED: 'bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-400',
   WAITLISTED: 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
   WITHDRAWN: 'bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500',
+  // Group stage only — didn't qualify for playoffs (system-set, see lib/teams.ts).
+  ELIMINATED: 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400',
 };
 
 export default function RegistrationsTable({ tournamentId }: Props) {

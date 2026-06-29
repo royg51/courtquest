@@ -139,6 +139,9 @@ export async function createTournament(
       venue: input.venue,
       address: input.address,
       allowGuestRegistration: input.allowGuestRegistration ?? false,
+      groupSize: input.groupSize ?? null,
+      qualifiersPerGroup: input.qualifiersPerGroup ?? null,
+      playoffFormat: input.playoffFormat ?? null,
     },
   });
 }
@@ -163,6 +166,9 @@ export async function updateTournament(id: string, input: UpdateTournamentInput)
   if (input.address !== undefined) data.address = input.address;
   if (input.allowGuestRegistration !== undefined)
     data.allowGuestRegistration = input.allowGuestRegistration;
+  if (input.groupSize !== undefined) data.groupSize = input.groupSize;
+  if (input.qualifiersPerGroup !== undefined) data.qualifiersPerGroup = input.qualifiersPerGroup;
+  if (input.playoffFormat !== undefined) data.playoffFormat = input.playoffFormat;
   if (input.status !== undefined) data.status = input.status;
 
   if (input.entryType !== undefined) {
