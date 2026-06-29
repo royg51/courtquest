@@ -51,7 +51,17 @@ export function seedOrder(size: number): number[] {
   return result;
 }
 
-export async function generateSingleEliminationBracket(tournamentId: string) {
+// `existingBracketId` lets a compound format (group stage → playoffs) hand
+// this generator an already-created Bracket row to add rounds to, instead of
+// creating a new one — a Bracket is unique per tournament, and the group
+// stage's rounds already occupy it. Round numbers/names can overlap with
+// that earlier phase's; consumers always filter by groupNumber/bracketSide
+// before relying on `number` for ordering, the same convention double
+// elimination's winners/losers/grand-finals rounds already rely on.
+export async function generateSingleEliminationBracket(
+  tournamentId: string,
+  options?: { existingBracketId?: string }
+) {
   const tournament = await db.tournament.findUnique({
     where: { id: tournamentId },
     include: {
@@ -64,7 +74,7 @@ export async function generateSingleEliminationBracket(tournamentId: string) {
   });
 
   if (!tournament) throw new BracketError('NOT_FOUND', 'Tournament not found');
-  if (tournament.bracket) {
+  if (!options?.existingBracketId && tournament.bracket) {
     throw new BracketError('ALREADY_EXISTS', 'Bracket already generated for this tournament');
   }
   if (tournament.teams.length < 2) {
@@ -82,7 +92,9 @@ export async function generateSingleEliminationBracket(tournamentId: string) {
   const positionTeam = order.map((seed) => teams[seed - 1] ?? null);
 
   return db.$transaction(async (tx) => {
-    const bracket = await tx.bracket.create({ data: { tournamentId } });
+    const bracket = options?.existingBracketId
+      ? { id: options.existingBracketId }
+      : await tx.bracket.create({ data: { tournamentId } });
 
     // Build from the final round backward so each match's nextMatchId can
     // reference an already-created row (Prisma needs the target to exist).
@@ -207,6 +219,7 @@ export async function getBracketTree(tournamentId: string): Promise<BracketTree 
       name: round.name,
       bracketSide: round.bracketSide,
       isBracketReset: round.isBracketReset,
+      groupNumber: round.groupNumber,
       matches: round.matches.map((match) => ({
         id: match.id,
         status: match.status as MatchStatus,

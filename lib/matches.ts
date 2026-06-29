@@ -9,6 +9,7 @@ import { db } from '@/lib/db';
 import { sendMatchReadyNotification, sendTournamentResults } from '@/lib/email';
 import { getRoundRobinStandings } from '@/lib/formats/round-robin';
 import { advanceDoubleElimination, createGrandFinalReset } from '@/lib/formats/double-elimination';
+import { finalizeGroupStageAndGeneratePlayoffs } from '@/lib/formats/group-stage';
 
 export class MatchError extends Error {
   code: string;
@@ -140,7 +141,9 @@ export async function submitScore(matchId: string, scores: { scoreA: number; sco
     include: {
       round: {
         include: {
-          bracket: { include: { tournament: { select: { id: true, format: true } } } },
+          bracket: {
+            include: { tournament: { select: { id: true, format: true, playoffFormat: true } } },
+          },
         },
       },
     },
@@ -163,8 +166,20 @@ export async function submitScore(matchId: string, scores: { scoreA: number; sco
   const bracketId = match.round.bracketId;
   const format = match.round.bracket.tournament.format;
 
+  // A group-stage tournament's format never changes from GROUP_STAGE, even
+  // once playoffs start — but a playoff match (groupNumber null, created by
+  // the unmodified single/double-elim generator) needs that generator's own
+  // advancement logic, not group-stage's. effectiveFormat is what the
+  // advancement branches below actually key off; `format` stays the raw
+  // tournament format for the group-stage-phase-vs-playoff-phase decision.
+  const isGroupStagePlayoffMatch = format === 'GROUP_STAGE' && match.round.groupNumber === null;
+  const effectiveFormat = isGroupStagePlayoffMatch
+    ? match.round.bracket.tournament.playoffFormat ?? format
+    : format;
+
   // Record the result. Elimination advancement happens in the same
-  // transaction; round-robin has no advancement (completion is handled below).
+  // transaction; round-robin/group-stage-phase matches have no advancement
+  // (completion is handled below).
   const { updated: updatedMatch, completed, resetCreated } = await db.$transaction(async (tx) => {
     const updated = await tx.match.update({
       where: { id: matchId },
@@ -180,7 +195,7 @@ export async function submitScore(matchId: string, scores: { scoreA: number; sco
     let completed = false;
     let resetCreated = false;
 
-    if (format === 'SINGLE_ELIM') {
+    if (effectiveFormat === 'SINGLE_ELIM') {
       if (match.nextMatchId) {
         await tx.match.update({
           where: { id: match.nextMatchId },
@@ -194,7 +209,7 @@ export async function submitScore(matchId: string, scores: { scoreA: number; sco
         await tx.team.update({ where: { id: loserId }, data: { placement: 2 } });
         completed = true;
       }
-    } else if (format === 'DOUBLE_ELIM') {
+    } else if (effectiveFormat === 'DOUBLE_ELIM') {
       if (match.round.bracketSide === 'GRAND_FINALS') {
         const lbSideForcedReset = !match.round.isBracketReset && winnerId === match.teamBId;
         if (lbSideForcedReset) {
@@ -238,7 +253,22 @@ export async function submitScore(matchId: string, scores: { scoreA: number; sco
     return updatedMatch;
   }
 
-  if (format === 'DOUBLE_ELIM') {
+  // Group stage, group phase: once every group's round robin is done across
+  // the whole bracket, qualify/eliminate teams and generate the playoffs.
+  if (format === 'GROUP_STAGE' && !isGroupStagePlayoffMatch) {
+    const remaining = await db.match.count({
+      where: { round: { bracketId, groupNumber: { not: null } }, status: { in: ['PENDING', 'IN_PROGRESS'] } },
+    });
+    if (remaining === 0) {
+      const { newMatchIds } = await finalizeGroupStageAndGeneratePlayoffs(tournamentId);
+      for (const newMatchId of newMatchIds) {
+        await notifyIfNextMatchReady(newMatchId, tournamentId);
+      }
+    }
+    return updatedMatch;
+  }
+
+  if (effectiveFormat === 'DOUBLE_ELIM') {
     if (completed) {
       await notifyTournamentResults(tournamentId, winnerId);
     } else if (!resetCreated) {
@@ -249,7 +279,9 @@ export async function submitScore(matchId: string, scores: { scoreA: number; sco
   }
 
   // Single elimination notifications (outside the transaction — emailing while
-  // holding it open would tie up a connection for the network call).
+  // holding it open would tie up a connection for the network call). Covers
+  // both a plain SINGLE_ELIM tournament and a group stage's playoff phase
+  // when playoffFormat is single elimination.
   if (match.nextMatchId) {
     await notifyIfNextMatchReady(match.nextMatchId, tournamentId);
   } else {

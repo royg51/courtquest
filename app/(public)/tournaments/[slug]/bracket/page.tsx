@@ -7,9 +7,11 @@ import { notFound } from 'next/navigation';
 import { getTournamentBySlug } from '@/lib/tournaments';
 import { getCourtQueues } from '@/lib/matches';
 import { getRoundRobinStandings } from '@/lib/formats/round-robin';
+import { getGroupStandings } from '@/lib/formats/group-stage';
 import PublicBracketView from '@/components/bracket/PublicBracketView';
 import CourtQueues from '@/components/organizer/CourtQueues';
 import StandingsTable from '@/components/bracket/StandingsTable';
+import GroupStandingsTable from '@/components/bracket/GroupStandingsTable';
 import { pageMetadata } from '@/lib/seo';
 
 export async function generateMetadata({
@@ -33,16 +35,18 @@ export default async function BracketPage({ params }: { params: { slug: string }
   }
 
   const isRoundRobin = tournament.format === 'ROUND_ROBIN';
-  const [queues, standings] = await Promise.all([
+  const isGroupStage = tournament.format === 'GROUP_STAGE';
+  const [queues, standings, groupStandings] = await Promise.all([
     getCourtQueues(tournament.id),
     isRoundRobin ? getRoundRobinStandings(tournament.id) : Promise.resolve([]),
+    isGroupStage ? getGroupStandings(tournament.id) : Promise.resolve([]),
   ]);
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-brand-700 dark:text-brand-400">
-          {tournament.name} — {isRoundRobin ? 'Standings' : 'Bracket'}
+          {tournament.name} — {isRoundRobin ? 'Standings' : isGroupStage ? 'Groups' : 'Bracket'}
         </h1>
         <Link
           href={`/tournaments/${tournament.slug}/live`}
@@ -60,6 +64,18 @@ export default async function BracketPage({ params }: { params: { slug: string }
         <section className="mb-8">
           <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">Standings</h2>
           <StandingsTable rows={standings} />
+        </section>
+      )}
+
+      {isGroupStage && groupStandings.length > 0 && (
+        <section className="mb-8">
+          <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">
+            Group Standings
+          </h2>
+          <GroupStandingsTable
+            groups={groupStandings}
+            qualifiersPerGroup={tournament.qualifiersPerGroup ?? 1}
+          />
         </section>
       )}
 

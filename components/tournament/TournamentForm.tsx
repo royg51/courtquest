@@ -30,6 +30,9 @@ export interface TournamentFormDefaults {
   venue: string;
   address: string;
   allowGuestRegistration: boolean;
+  groupSize: number;
+  qualifiersPerGroup: number;
+  playoffFormat: string;
 }
 
 interface Props {
@@ -49,6 +52,7 @@ export default function TournamentForm({ mode, tournamentId, defaults }: Props) 
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<CreateTournamentInput>({
     resolver: zodResolver(createTournamentSchema),
@@ -68,8 +72,13 @@ export default function TournamentForm({ mode, tournamentId, defaults }: Props) 
       venue: defaults?.venue,
       address: defaults?.address,
       allowGuestRegistration: defaults?.allowGuestRegistration ?? false,
+      groupSize: defaults?.groupSize,
+      qualifiersPerGroup: defaults?.qualifiersPerGroup,
+      playoffFormat: defaults?.playoffFormat as 'SINGLE_ELIM' | 'DOUBLE_ELIM' | undefined,
     },
   });
+
+  const format = watch('format');
 
   const onSubmit = async (data: CreateTournamentInput) => {
     setSubmitting(true);
@@ -144,6 +153,42 @@ export default function TournamentForm({ mode, tournamentId, defaults }: Props) 
             ))}
           </select>
         </div>
+
+        {format === 'GROUP_STAGE' && (
+          <>
+            <TextField
+              label="Teams per group"
+              type="number"
+              min="2"
+              max="32"
+              error={errors.groupSize?.message}
+              {...register('groupSize', { valueAsNumber: true })}
+            />
+            <TextField
+              label="Qualifiers per group"
+              type="number"
+              min="1"
+              max="16"
+              error={errors.qualifiersPerGroup?.message}
+              {...register('qualifiersPerGroup', { valueAsNumber: true })}
+            />
+            <div>
+              <label htmlFor="playoffFormat" className={labelClass}>
+                Playoff format
+              </label>
+              <select id="playoffFormat" className={selectClass} {...register('playoffFormat')}>
+                <option value="">Select a playoff format…</option>
+                <option value="SINGLE_ELIM">Single Elimination</option>
+                <option value="DOUBLE_ELIM">Double Elimination</option>
+              </select>
+              {errors.playoffFormat?.message && (
+                <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+                  {errors.playoffFormat.message}
+                </p>
+              )}
+            </div>
+          </>
+        )}
 
         <div>
           <label htmlFor="entryType" className={labelClass}>

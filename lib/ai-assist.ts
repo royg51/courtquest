@@ -71,8 +71,12 @@ export interface FormatRecommendation {
 
 // Recommends a format from the field size. Small fields play better as round
 // robin (everyone gets several matches and the result is fair); larger fields
-// run cleanly as single elimination. Double-elim/Swiss aren't recommended yet
-// because their engines aren't implemented.
+// run cleanly as single elimination. Double elimination and group stage are
+// real options organizers can pick directly, but aren't auto-recommended
+// here — both need extra organizer-specific configuration (best-of-losses
+// preference, or group size/qualifiers/playoff format) that a team-count
+// heuristic alone can't decide. Swiss isn't recommended because its engine
+// isn't implemented yet.
 export function recommendFormat(teamCount: number): FormatRecommendation {
   if (teamCount <= 6) {
     return {

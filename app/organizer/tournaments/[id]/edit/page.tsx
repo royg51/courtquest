@@ -44,6 +44,11 @@ export default async function EditTournamentPage({ params }: { params: { id: str
     venue: tournament.venue ?? '',
     address: tournament.address ?? '',
     allowGuestRegistration: tournament.allowGuestRegistration,
+    ...(tournament.groupSize != null ? { groupSize: tournament.groupSize } : {}),
+    ...(tournament.qualifiersPerGroup != null
+      ? { qualifiersPerGroup: tournament.qualifiersPerGroup }
+      : {}),
+    ...(tournament.playoffFormat != null ? { playoffFormat: tournament.playoffFormat } : {}),
   };
 
   return (

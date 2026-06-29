@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useBracket } from '@/hooks/useBracket';
 import BracketViewer from './BracketViewer';
 import DoubleEliminationView from './DoubleEliminationView';
+import GroupStageMatchesView from './GroupStageMatchesView';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Network } from 'lucide-react';
 
@@ -33,12 +34,23 @@ export default function OrganizerBracketView({ tournamentId }: Props) {
     );
   }
 
-  const isDoubleElim = bracket.rounds.some((round) => round.bracketSide !== 'MAIN');
+  // See the matching comment in PublicBracketView.tsx — group-stage rounds
+  // share their tournament's Bracket row with the playoff rounds that follow,
+  // so they're excluded here (a no-op for every other format).
+  const playoffRounds = bracket.rounds.filter((round) => round.groupNumber === null);
+  const playoffBracket = { ...bracket, rounds: playoffRounds };
+  const isDoubleElim = playoffRounds.some((round) => round.bracketSide !== 'MAIN');
   const onScoreSubmit = () => queryClient.invalidateQueries({ queryKey: ['bracket', tournamentId] });
 
-  return isDoubleElim ? (
-    <DoubleEliminationView bracket={bracket} mode="organizer" onScoreSubmit={onScoreSubmit} />
-  ) : (
-    <BracketViewer bracket={bracket} mode="organizer" onScoreSubmit={onScoreSubmit} />
+  return (
+    <div className="space-y-10">
+      <GroupStageMatchesView bracket={bracket} mode="organizer" onScoreSubmit={onScoreSubmit} />
+      {playoffRounds.length > 0 &&
+        (isDoubleElim ? (
+          <DoubleEliminationView bracket={playoffBracket} mode="organizer" onScoreSubmit={onScoreSubmit} />
+        ) : (
+          <BracketViewer bracket={playoffBracket} mode="organizer" onScoreSubmit={onScoreSubmit} />
+        ))}
+    </div>
   );
 }

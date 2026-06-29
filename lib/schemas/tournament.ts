@@ -17,6 +17,7 @@ const optionalNumber = (schema: z.ZodNumber) =>
 const sportEnum = z.enum(SPORTS as unknown as [string, ...string[]]);
 const formatEnum = z.enum(FORMATS.map((f) => f.value) as unknown as [string, ...string[]]);
 const entryTypeEnum = z.enum(ENTRY_TYPES.map((e) => e.value) as unknown as [string, ...string[]]);
+const playoffFormatEnum = z.enum(['SINGLE_ELIM', 'DOUBLE_ELIM']);
 
 // Dates arrive from <input type="date"> as "YYYY-MM-DD" strings. z.coerce.date
 // parses those; .refine guards keep the timeline sane.
@@ -38,6 +39,11 @@ const baseTournamentFields = {
   address: z.string().max(300).optional(),
   // Checkbox: react-hook-form sends a boolean; default to false when absent.
   allowGuestRegistration: z.coerce.boolean().optional().default(false),
+  // Group stage only — required when format is GROUP_STAGE (enforced below),
+  // ignored otherwise.
+  groupSize: optionalNumber(z.coerce.number().int().min(2).max(32)),
+  qualifiersPerGroup: optionalNumber(z.coerce.number().int().min(1).max(16)),
+  playoffFormat: playoffFormatEnum.optional(),
 };
 
 export const createTournamentSchema = z
@@ -49,6 +55,18 @@ export const createTournamentSchema = z
   .refine((d) => d.registrationDeadline <= d.startDate, {
     message: 'Registration deadline must be on or before the start date',
     path: ['registrationDeadline'],
+  })
+  .refine((d) => d.format !== 'GROUP_STAGE' || d.groupSize !== undefined, {
+    message: 'Group size is required for group stage tournaments',
+    path: ['groupSize'],
+  })
+  .refine((d) => d.format !== 'GROUP_STAGE' || d.qualifiersPerGroup !== undefined, {
+    message: 'Qualifiers per group is required for group stage tournaments',
+    path: ['qualifiersPerGroup'],
+  })
+  .refine((d) => d.format !== 'GROUP_STAGE' || d.playoffFormat !== undefined, {
+    message: 'A playoff format is required for group stage tournaments',
+    path: ['playoffFormat'],
   });
 
 export type CreateTournamentInput = z.infer<typeof createTournamentSchema>;
@@ -71,6 +89,9 @@ export const updateTournamentSchema = z.object({
   venue: z.string().max(200).optional(),
   address: z.string().max(300).optional(),
   allowGuestRegistration: z.coerce.boolean().optional(),
+  groupSize: optionalNumber(z.coerce.number().int().min(2).max(32)),
+  qualifiersPerGroup: optionalNumber(z.coerce.number().int().min(1).max(16)),
+  playoffFormat: playoffFormatEnum.optional(),
   status: z.enum(['DRAFT', 'OPEN', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']).optional(),
 });
 
