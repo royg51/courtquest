@@ -7,6 +7,7 @@ import { auth, requireRole } from '@/lib/auth';
 import { getTournamentById } from '@/lib/tournaments';
 import { generateSingleEliminationBracket, BracketError, notifyTournamentStarted } from '@/lib/bracket';
 import { generateRoundRobinBracket } from '@/lib/formats/round-robin';
+import { generateDoubleEliminationBracket } from '@/lib/formats/double-elimination';
 import { recordAudit } from '@/lib/audit';
 import { isFormatImplemented } from '@/lib/sports';
 
@@ -43,7 +44,9 @@ export async function POST(_request: NextRequest, { params }: { params: { id: st
     const bracket =
       tournament.format === 'ROUND_ROBIN'
         ? await generateRoundRobinBracket(params.id)
-        : await generateSingleEliminationBracket(params.id);
+        : tournament.format === 'DOUBLE_ELIM'
+          ? await generateDoubleEliminationBracket(params.id)
+          : await generateSingleEliminationBracket(params.id);
 
     await recordAudit({
       actor: { id: session!.user.id, email: session!.user.email ?? null },

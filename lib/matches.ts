@@ -8,6 +8,7 @@
 import { db } from '@/lib/db';
 import { sendMatchReadyNotification, sendTournamentResults } from '@/lib/email';
 import { getRoundRobinStandings } from '@/lib/formats/round-robin';
+import { advanceDoubleElimination, createGrandFinalReset } from '@/lib/formats/double-elimination';
 
 export class MatchError extends Error {
   code: string;
@@ -137,7 +138,11 @@ export async function submitScore(matchId: string, scores: { scoreA: number; sco
   const match = await db.match.findUnique({
     where: { id: matchId },
     include: {
-      round: { include: { bracket: { include: { tournament: { select: { id: true, format: true } } } } } },
+      round: {
+        include: {
+          bracket: { include: { tournament: { select: { id: true, format: true } } } },
+        },
+      },
     },
   });
 
@@ -160,7 +165,7 @@ export async function submitScore(matchId: string, scores: { scoreA: number; sco
 
   // Record the result. Elimination advancement happens in the same
   // transaction; round-robin has no advancement (completion is handled below).
-  const updatedMatch = await db.$transaction(async (tx) => {
+  const { updated: updatedMatch, completed, resetCreated } = await db.$transaction(async (tx) => {
     const updated = await tx.match.update({
       where: { id: matchId },
       data: {
@@ -171,6 +176,9 @@ export async function submitScore(matchId: string, scores: { scoreA: number; sco
         completedAt: new Date(),
       },
     });
+
+    let completed = false;
+    let resetCreated = false;
 
     if (format === 'SINGLE_ELIM') {
       if (match.nextMatchId) {
@@ -184,10 +192,32 @@ export async function submitScore(matchId: string, scores: { scoreA: number; sco
         await tx.tournament.update({ where: { id: tournamentId }, data: { status: 'COMPLETED' } });
         await tx.team.update({ where: { id: winnerId }, data: { placement: 1 } });
         await tx.team.update({ where: { id: loserId }, data: { placement: 2 } });
+        completed = true;
+      }
+    } else if (format === 'DOUBLE_ELIM') {
+      if (match.round.bracketSide === 'GRAND_FINALS') {
+        const lbSideForcedReset = !match.round.isBracketReset && winnerId === match.teamBId;
+        if (lbSideForcedReset) {
+          await createGrandFinalReset(
+            tx,
+            match.round.bracketId,
+            match.round.number,
+            match.teamAId!,
+            match.teamBId!
+          );
+          resetCreated = true;
+        } else {
+          await tx.tournament.update({ where: { id: tournamentId }, data: { status: 'COMPLETED' } });
+          await tx.team.update({ where: { id: winnerId }, data: { placement: 1 } });
+          await tx.team.update({ where: { id: loserId }, data: { placement: 2 } });
+          completed = true;
+        }
+      } else {
+        await advanceDoubleElimination(tx, match, winnerId, loserId);
       }
     }
 
-    return updated;
+    return { updated, completed, resetCreated };
   });
 
   // Round-robin: once every match has a score, finalize standings + placements.
@@ -204,6 +234,16 @@ export async function submitScore(matchId: string, scores: { scoreA: number; sco
       );
       await db.tournament.update({ where: { id: tournamentId }, data: { status: 'COMPLETED' } });
       if (standings[0]) await notifyTournamentResults(tournamentId, standings[0].teamId);
+    }
+    return updatedMatch;
+  }
+
+  if (format === 'DOUBLE_ELIM') {
+    if (completed) {
+      await notifyTournamentResults(tournamentId, winnerId);
+    } else if (!resetCreated) {
+      if (match.nextMatchId) await notifyIfNextMatchReady(match.nextMatchId, tournamentId);
+      if (match.loserNextMatchId) await notifyIfNextMatchReady(match.loserNextMatchId, tournamentId);
     }
     return updatedMatch;
   }

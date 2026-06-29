@@ -17,10 +17,14 @@ export interface BracketTree {
   rounds: RoundWithMatches[];
 }
 
+// bracketSide is 'MAIN' for single-elim/round-robin, or
+// 'WINNERS' | 'LOSERS' | 'GRAND_FINALS' for double elimination.
 export interface RoundWithMatches {
   id: string;
   number: number;
   name: string;
+  bracketSide: string;
+  isBracketReset: boolean;
   matches: MatchWithTeams[];
 }
 

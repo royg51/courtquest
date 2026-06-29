@@ -176,13 +176,18 @@ model Bracket {
   generatedAt  DateTime   @default(now())
 }
 
+// bracketSide: MAIN (single-elim/round-robin) | WINNERS | LOSERS | GRAND_FINALS
+// (double-elim only). isBracketReset marks the lazily-created second grand
+// finals match, played only if the losers-bracket finalist wins game one.
 model Round {
-  id        String  @id @default(cuid())
-  bracketId String
-  bracket   Bracket @relation(fields: [bracketId], references: [id], onDelete: Cascade)
-  number    Int
-  name      String
-  matches   Match[]
+  id             String  @id @default(cuid())
+  bracketId      String
+  bracket        Bracket @relation(fields: [bracketId], references: [id], onDelete: Cascade)
+  number         Int
+  name           String
+  bracketSide    String  @default("MAIN")
+  isBracketReset Boolean @default(false)
+  matches        Match[]
 }
 
 // status: PENDING | IN_PROGRESS | COMPLETED | BYE
@@ -210,6 +215,19 @@ model Match {
   nextMatch    Match?    @relation("Advancement", fields: [nextMatchId], references: [id])
   fedByMatches Match[]   @relation("Advancement")
   isSlotA      Boolean   @default(true)
+  // Double-elim only: which match does this match's LOSER drop into (winners
+  // bracket matches only — losers bracket losers are simply eliminated), and
+  // which slot they land in there.
+  loserNextMatchId  String?
+  loserNextMatch    Match?  @relation("LoserAdvancement", fields: [loserNextMatchId], references: [id])
+  fedByLoserMatches Match[] @relation("LoserAdvancement")
+  loserGoesToSlotA  Boolean @default(true)
+  // Double-elim only: a slot a real team can structurally never reach (its
+  // entire feeder lineage was byes). When the other slot is filled and this
+  // one is dead, the match auto-resolves as a walkover instead of waiting
+  // for an opponent that will never arrive.
+  deadSlotA Boolean @default(false)
+  deadSlotB Boolean @default(false)
 }
 
 // Append-only audit trail for privileged/destructive actions (role changes,

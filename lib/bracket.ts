@@ -41,7 +41,7 @@ export function roundName(roundsFromFinal: number): string {
 // Standard bracket seeding order (1 vs N, 2 vs N-1, recursively applied to
 // each half) so that bye slots — which always number fewer than size/2 —
 // land in distinct first-round matches instead of clustering together.
-function seedOrder(size: number): number[] {
+export function seedOrder(size: number): number[] {
   if (size === 1) return [1];
   const prev = seedOrder(size / 2);
   const result: number[] = [];
@@ -205,6 +205,8 @@ export async function getBracketTree(tournamentId: string): Promise<BracketTree 
       id: round.id,
       number: round.number,
       name: round.name,
+      bracketSide: round.bracketSide,
+      isBracketReset: round.isBracketReset,
       matches: round.matches.map((match) => ({
         id: match.id,
         status: match.status as MatchStatus,

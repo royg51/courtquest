@@ -6,14 +6,13 @@
 export const SPORTS = ['Pickleball', 'Tennis', 'Basketball'] as const;
 export type Sport = (typeof SPORTS)[number];
 
-// Only SINGLE_ELIM has a working bracket engine today. The others are listed
-// so organizers can see what's coming and so creation stores intent, but
-// `implemented: false` lets the UI disable them and the bracket generator
-// reject them until their engines land (roadmap Phase 6).
+// `implemented: false` lets the UI disable a format and the bracket
+// generator reject it until its engine lands, rather than silently
+// producing an incorrect bracket.
 export const FORMATS = [
   { value: 'SINGLE_ELIM', label: 'Single Elimination', implemented: true },
   { value: 'ROUND_ROBIN', label: 'Round Robin', implemented: true },
-  { value: 'DOUBLE_ELIM', label: 'Double Elimination', implemented: false },
+  { value: 'DOUBLE_ELIM', label: 'Double Elimination', implemented: true },
   { value: 'SWISS', label: 'Swiss', implemented: false },
 ] as const;
 
