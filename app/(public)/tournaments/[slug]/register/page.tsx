@@ -7,6 +7,7 @@ import type { Metadata } from 'next';
 import { redirect, notFound } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { getTournamentBySlug } from '@/lib/tournaments';
+import { getMyPermanentTeams } from '@/lib/permanentTeams';
 import RegistrationForm from '@/components/registration/RegistrationForm';
 import { pageMetadata } from '@/lib/seo';
 
@@ -52,6 +53,15 @@ export default async function RegisterPage({ params }: { params: { slug: string 
     );
   }
 
+  // Permanent teams only make sense for doubles, logged-in registrants, with
+  // a full accepted roster of the right size.
+  const myPermanentTeams =
+    !isGuest && tournament.teamSize === 2
+      ? (await getMyPermanentTeams(session!.user.id))
+          .filter((t) => t.members.filter((m) => m.inviteStatus === 'ACCEPTED').length === 2)
+          .map((t) => ({ id: t.id, name: t.name }))
+      : [];
+
   return (
     <main>
       <h1 className="mx-auto max-w-md px-4 pt-8 text-2xl font-bold text-brand-700 dark:text-brand-400">
@@ -64,6 +74,7 @@ export default async function RegisterPage({ params }: { params: { slug: string 
         requiresPayment={tournament.requiresPayment}
         entryFeeCents={tournament.entryFeeCents}
         guestMode={isGuest}
+        myPermanentTeams={myPermanentTeams}
       />
     </main>
   );

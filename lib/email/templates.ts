@@ -171,6 +171,25 @@ export function tournamentStartedEmail(opts: {
   return { subject, html };
 }
 
+export function teamInviteEmail(opts: {
+  inviterName: string;
+  teamName: string;
+  context: string; // e.g. "Spring Open" (tournament) or "a permanent team"
+  acceptUrl: string;
+}) {
+  const subject = `${opts.inviterName} invited you to join "${opts.teamName}"`;
+  const html = layout({
+    preheader: `${opts.inviterName} invited you to join their team for ${opts.context}.`,
+    bodyHtml: `
+      <p>Hi,</p>
+      <p><strong>${opts.inviterName}</strong> invited you to join team "<strong>${opts.teamName}</strong>" for ${opts.context}.</p>
+      <p>If you don't have a CourtQuest account yet, you'll be asked to create one before accepting.</p>
+      ${button('View invite', opts.acceptUrl)}
+    `,
+  });
+  return { subject, html };
+}
+
 export function tournamentResultsEmail(opts: {
   name: string;
   tournamentName: string;

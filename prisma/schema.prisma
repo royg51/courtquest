@@ -78,6 +78,7 @@ model User {
   accounts             Account[]
   sessions             Session[]
   teamMembers          TeamMember[]
+  permanentTeamMembers PermanentTeamMember[]
   tournamentsOrganized Tournament[]
   auditLogs            AuditLog[]
   createdAt            DateTime     @default(now())
@@ -143,6 +144,12 @@ model Team {
   status          String       @default("PENDING")
   paymentStatus   String       @default("UNPAID")
   stripePaymentId String?
+  // Set when this tournament registration was made on behalf of an existing
+  // permanent team (its accepted roster copied in directly, no per-tournament
+  // invite needed) rather than as a one-off, tournament-only team. SetNull so
+  // deleting the permanent team later doesn't erase tournament history.
+  permanentTeamId String?
+  permanentTeam   PermanentTeam? @relation(fields: [permanentTeamId], references: [id], onDelete: SetNull)
   members         TeamMember[]
   matchesAsA      Match[]      @relation("TeamA")
   matchesAsB      Match[]      @relation("TeamB")
@@ -151,6 +158,10 @@ model Team {
 }
 
 // skillLevel: BEGINNER | INTERMEDIATE | ADVANCE_INTERMEDIATE | ADVANCED
+// inviteStatus: PENDING | ACCEPTED | DECLINED. Defaults to ACCEPTED since
+// every pre-existing path (the primary registrant, a guest partner someone
+// else filled in) needs no acceptance step — PENDING/DECLINED only apply to
+// the invite-by-email path (see lib/invites.ts), where inviteToken is set.
 model TeamMember {
   id             String  @id @default(cuid())
   teamId         String
@@ -164,6 +175,38 @@ model TeamMember {
   guestPhone     String?
   skillLevel     String?
   waiverAccepted Boolean @default(false)
+  inviteStatus   String  @default("ACCEPTED")
+  inviteToken    String? @unique
+
+  @@index([userId])
+}
+
+// A roster that exists independent of any one tournament — players create
+// one once and reuse it to register for tournaments without re-inviting
+// teammates each time (see Team.permanentTeamId). A one-off, tournament-only
+// team (the original/default registration path) has no PermanentTeam at all.
+model PermanentTeam {
+  id        String                @id @default(cuid())
+  name      String
+  sport     String
+  createdAt DateTime              @default(now())
+  members   PermanentTeamMember[]
+  teams     Team[]
+}
+
+// inviteStatus: PENDING | ACCEPTED | DECLINED — same invite-by-email flow as
+// TeamMember, reused for permanent-team membership (see lib/invites.ts).
+model PermanentTeamMember {
+  id              String        @id @default(cuid())
+  permanentTeamId String
+  permanentTeam   PermanentTeam @relation(fields: [permanentTeamId], references: [id], onDelete: Cascade)
+  userId          String?
+  user            User?         @relation(fields: [userId], references: [id])
+  isPrimary       Boolean       @default(false)
+  guestEmail      String?
+  inviteStatus    String        @default("ACCEPTED")
+  inviteToken     String?       @unique
+  joinedAt        DateTime      @default(now())
 
   @@index([userId])
 }

@@ -16,6 +16,7 @@ import {
   organizerNewRegistrationEmail,
   tournamentStartedEmail,
   tournamentResultsEmail,
+  teamInviteEmail,
 } from '@/lib/email/templates';
 
 let _resend: Resend | null = null;
@@ -118,6 +119,17 @@ export async function sendTournamentStarted(opts: {
 }) {
   const { subject, html } = tournamentStartedEmail(opts);
   await send({ to: opts.to, subject, html, tag: 'tournament-started' });
+}
+
+export async function sendTeamInvite(opts: {
+  to: string;
+  inviterName: string;
+  teamName: string;
+  context: string;
+  acceptUrl: string;
+}) {
+  const { subject, html } = teamInviteEmail(opts);
+  await send({ to: opts.to, subject, html, tag: 'team-invite' });
 }
 
 export async function sendTournamentResults(opts: {

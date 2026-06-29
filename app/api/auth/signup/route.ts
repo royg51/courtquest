@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { signupSchema } from '@/lib/schemas/auth';
 import { checkRateLimit, getClientIp, rateLimitResponse, RATE_LIMIT_CONFIG } from '@/lib/rate-limit';
 import { sendWelcomeEmail } from '@/lib/email';
+import { linkGuestRecordsToNewUser } from '@/lib/invites';
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
@@ -43,6 +44,11 @@ export async function POST(request: NextRequest) {
     data: { name, email, passwordHash, role: 'PLAYER' },
     select: { id: true, name: true, email: true, role: true, createdAt: true },
   });
+
+  // Claims any guest registrations/invites made under this email before the
+  // account existed — links userId without auto-accepting pending invites,
+  // which still need an explicit accept (see lib/invites.ts).
+  await linkGuestRecordsToNewUser(user.id, email);
 
   // Awaited (not fire-and-forget): on serverless, the function instance can
   // be frozen the moment the response is returned, killing any unawaited

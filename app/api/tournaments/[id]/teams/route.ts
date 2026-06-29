@@ -6,6 +6,7 @@ import { auth, requireRole } from '@/lib/auth';
 import { getTournamentById } from '@/lib/tournaments';
 import { getTeamsForTournament, registerTeam, RegistrationError, type PrimaryRegistrant } from '@/lib/teams';
 import { registerTeamSchema, guestRegisterTeamSchema } from '@/lib/schemas/team';
+import { inviteTeamMemberByEmail, InviteError } from '@/lib/invites';
 import { checkRateLimit, getClientIp, rateLimitResponse, RATE_LIMIT_CONFIG } from '@/lib/rate-limit';
 import { db } from '@/lib/db';
 import { sendRegistrationConfirmation, sendOrganizerNewRegistrationNotification } from '@/lib/email';
@@ -81,6 +82,14 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     registrantEmail = session!.user.email ?? null;
   }
 
+  const partner = (parsed.data as { partner?: { guestName?: string; guestEmail?: string; guestPhone?: string; inviteEmail?: string } }).partner;
+  if (isGuest && partner?.inviteEmail) {
+    return NextResponse.json(
+      { error: 'Sign in to invite a partner by email', code: 'UNAUTHORIZED' },
+      { status: 401 }
+    );
+  }
+
   try {
     const { guestPrimary: _omit, ...teamFields } = parsed.data as Record<string, unknown>;
     void _omit;
@@ -89,10 +98,13 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       teamName: teamFields.teamName as string,
       skillLevel: teamFields.skillLevel as string,
       waiverAccepted: teamFields.waiverAccepted as boolean,
-      partner: teamFields.partner as
-        | { guestName?: string; guestEmail?: string; guestPhone?: string }
-        | undefined,
+      permanentTeamId: teamFields.permanentTeamId as string | undefined,
+      partner: partner?.inviteEmail ? undefined : partner,
     });
+
+    if (partner?.inviteEmail) {
+      await inviteTeamMemberByEmail(team.id, session!.user.id, partner.inviteEmail);
+    }
 
     if (registrantEmail) {
       await sendRegistrationConfirmation({
@@ -124,6 +136,10 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   } catch (error) {
     if (error instanceof RegistrationError) {
       const status = error.code === 'NOT_FOUND' ? 404 : 409;
+      return NextResponse.json({ error: error.message, code: error.code }, { status });
+    }
+    if (error instanceof InviteError) {
+      const status = error.code === 'NOT_FOUND' ? 404 : error.code === 'FORBIDDEN' ? 403 : 409;
       return NextResponse.json({ error: error.message, code: error.code }, { status });
     }
     throw error;

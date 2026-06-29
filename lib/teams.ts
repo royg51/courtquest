@@ -56,8 +56,11 @@ export async function registerTeam(
     teamName: string;
     skillLevel: string;
     waiverAccepted: boolean;
+    // Registering on behalf of an existing permanent team copies its
+    // current accepted roster in directly (already-consented members, no
+    // per-tournament invite needed) instead of using `partner` at all.
+    permanentTeamId?: string;
     partner?: {
-      userId?: string;
       guestName?: string;
       guestEmail?: string;
       guestPhone?: string;
@@ -115,18 +118,40 @@ export async function registerTeam(
           waiverAccepted: data.waiverAccepted,
         };
 
+  let permanentRosterMembers: Array<{ userId: string; waiverAccepted: boolean }> = [];
+  if (data.permanentTeamId) {
+    const requestingUserId = 'userId' in primary ? primary.userId : null;
+    if (!requestingUserId) {
+      throw new RegistrationError('FORBIDDEN', 'Only logged-in users can register a permanent team');
+    }
+    const permanentTeam = await db.permanentTeam.findUnique({
+      where: { id: data.permanentTeamId },
+      include: { members: { where: { inviteStatus: 'ACCEPTED' } } },
+    });
+    if (!permanentTeam || !permanentTeam.members.some((m) => m.userId === requestingUserId)) {
+      throw new RegistrationError('FORBIDDEN', 'You are not a member of this team');
+    }
+    // The requesting user is already the primary member above — copy in
+    // everyone else's accepted membership directly, no per-tournament
+    // invite needed since they already consented at the team level.
+    permanentRosterMembers = permanentTeam.members
+      .filter((m) => m.userId && m.userId !== requestingUserId)
+      .map((m) => ({ userId: m.userId!, waiverAccepted: data.waiverAccepted }));
+  }
+
   return db.team.create({
     data: {
       tournamentId,
       name: data.teamName,
       status,
+      permanentTeamId: data.permanentTeamId,
       members: {
         create: [
           primaryMember,
+          ...permanentRosterMembers.map((m) => ({ ...m, isPrimary: false })),
           ...(data.partner
             ? [
                 {
-                  userId: data.partner.userId,
                   guestName: data.partner.guestName,
                   guestEmail: data.partner.guestEmail,
                   guestPhone: data.partner.guestPhone,
