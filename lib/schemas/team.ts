@@ -17,6 +17,18 @@ export const registerTeamSchema = z.object({
 
 export type RegisterTeamInput = z.infer<typeof registerTeamSchema>;
 
+// Guest (no account) registration adds the primary registrant's own details,
+// since there's no session user to pull them from.
+export const guestRegisterTeamSchema = registerTeamSchema.extend({
+  guestPrimary: z.object({
+    guestName: z.string().min(2, 'Your name is required').max(100),
+    guestEmail: z.string().email().optional().or(z.literal('')),
+    guestPhone: z.string().max(30).optional(),
+  }),
+});
+
+export type GuestRegisterTeamInput = z.infer<typeof guestRegisterTeamSchema>;
+
 export const updateTeamStatusSchema = z.object({
   status: z.enum(['CONFIRMED', 'WAITLISTED', 'WITHDRAWN']),
 });

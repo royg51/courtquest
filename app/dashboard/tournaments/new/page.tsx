@@ -4,7 +4,7 @@
 
 import { redirect } from 'next/navigation';
 import { auth, requireRole } from '@/lib/auth';
-import CreateTournamentForm from '@/components/tournament/CreateTournamentForm';
+import TournamentForm from '@/components/tournament/TournamentForm';
 
 export default async function NewTournamentPage() {
   const session = await auth();
@@ -19,10 +19,10 @@ export default async function NewTournamentPage() {
 
   return (
     <main>
-      <h1 className="mx-auto max-w-md px-4 pt-8 text-2xl font-bold text-brand-700 dark:text-brand-400">
+      <h1 className="mx-auto max-w-lg px-4 pt-8 text-2xl font-bold text-brand-700 dark:text-brand-400">
         Create a Tournament
       </h1>
-      <CreateTournamentForm />
+      <TournamentForm mode="create" />
     </main>
   );
 }

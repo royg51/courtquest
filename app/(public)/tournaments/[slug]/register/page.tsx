@@ -1,5 +1,7 @@
 // Registration page for a tournament.
-// Requires auth — redirects to login if not signed in.
+// Logged-in users register directly. If the tournament allows guest
+// registration, logged-out visitors get a guest form; otherwise they're sent
+// to login first.
 
 import type { Metadata } from 'next';
 import { redirect, notFound } from 'next/navigation';
@@ -25,13 +27,16 @@ export async function generateMetadata({
 
 export default async function RegisterPage({ params }: { params: { slug: string } }) {
   const session = await auth();
-  if (!session?.user) {
-    redirect(`/login?callbackUrl=/tournaments/${params.slug}/register`);
-  }
-
   const tournament = await getTournamentBySlug(params.slug);
   if (!tournament) {
     notFound();
+  }
+
+  // Logged-out visitors are allowed through only if this tournament permits
+  // guest registration; otherwise send them to login first.
+  const isGuest = !session?.user;
+  if (isGuest && !tournament.allowGuestRegistration) {
+    redirect(`/login?callbackUrl=/tournaments/${params.slug}/register`);
   }
 
   if (tournament.status !== 'OPEN') {
@@ -58,6 +63,7 @@ export default async function RegisterPage({ params }: { params: { slug: string 
         teamSize={tournament.teamSize as 1 | 2}
         requiresPayment={tournament.requiresPayment}
         entryFeeCents={tournament.entryFeeCents}
+        guestMode={isGuest}
       />
     </main>
   );

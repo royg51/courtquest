@@ -7,7 +7,12 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
-import { registerTeamSchema, type RegisterTeamInput } from '@/lib/schemas/team';
+import {
+  registerTeamSchema,
+  guestRegisterTeamSchema,
+  type RegisterTeamInput,
+  type GuestRegisterTeamInput,
+} from '@/lib/schemas/team';
 import { TextField } from '@/components/ui/TextField';
 import { useRegisterTeam } from '@/hooks/useRegistration';
 
@@ -17,6 +22,7 @@ interface Props {
   teamSize: 1 | 2;
   requiresPayment: boolean;
   entryFeeCents: number;
+  guestMode?: boolean;
 }
 
 const SKILL_LEVELS = [
@@ -26,12 +32,17 @@ const SKILL_LEVELS = [
   { value: 'ADVANCED', label: 'Advanced' },
 ];
 
+// In guest mode the form carries the registrant's own contact fields under
+// guestPrimary; the resolver type widens to the guest schema accordingly.
+type FormValues = RegisterTeamInput & Partial<GuestRegisterTeamInput>;
+
 export default function RegistrationForm({
   tournamentId,
   tournamentSlug,
   teamSize,
   requiresPayment,
   entryFeeCents,
+  guestMode = false,
 }: Props) {
   const router = useRouter();
   const registerTeam = useRegisterTeam(tournamentId);
@@ -40,16 +51,23 @@ export default function RegistrationForm({
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<RegisterTeamInput>({ resolver: zodResolver(registerTeamSchema) });
+  } = useForm<FormValues>({
+    resolver: zodResolver(guestMode ? guestRegisterTeamSchema : registerTeamSchema),
+  });
 
-  const onSubmit = async (data: RegisterTeamInput) => {
+  const onSubmit = async (data: FormValues) => {
     try {
-      await registerTeam.mutateAsync(teamSize === 2 ? data : { ...data, partner: undefined });
+      const payload = teamSize === 2 ? data : { ...data, partner: undefined };
+      await registerTeam.mutateAsync(payload as RegisterTeamInput | GuestRegisterTeamInput);
       toast.success("You're registered!");
       router.push(`/tournaments/${tournamentSlug}`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to register');
     }
+  };
+
+  const guestErrors = errors as Record<string, { message?: string } | undefined> & {
+    guestPrimary?: { guestName?: { message?: string }; guestEmail?: { message?: string } };
   };
 
   return (
@@ -59,6 +77,25 @@ export default function RegistrationForm({
           Entry fee: ${(entryFeeCents / 100).toFixed(2)} — pay onsite or as arranged with the
           organizer.
         </div>
+      )}
+
+      {guestMode && (
+        <fieldset className="space-y-3 rounded-md border border-gray-200 p-3 dark:border-gray-800">
+          <legend className="px-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+            Your details
+          </legend>
+          <TextField
+            label="Your name"
+            error={guestErrors.guestPrimary?.guestName?.message}
+            {...register('guestPrimary.guestName')}
+          />
+          <TextField
+            label="Your email (optional, for confirmation)"
+            type="email"
+            error={guestErrors.guestPrimary?.guestEmail?.message}
+            {...register('guestPrimary.guestEmail')}
+          />
+        </fieldset>
       )}
 
       <TextField label="Team name" error={errors.teamName?.message} {...register('teamName')} />
