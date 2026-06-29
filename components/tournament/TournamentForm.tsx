@@ -30,6 +30,7 @@ export interface TournamentFormDefaults {
   venue: string;
   address: string;
   allowGuestRegistration: boolean;
+  swissRounds: number;
 }
 
 interface Props {
@@ -49,6 +50,7 @@ export default function TournamentForm({ mode, tournamentId, defaults }: Props) 
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<CreateTournamentInput>({
     resolver: zodResolver(createTournamentSchema),
@@ -68,8 +70,11 @@ export default function TournamentForm({ mode, tournamentId, defaults }: Props) 
       venue: defaults?.venue,
       address: defaults?.address,
       allowGuestRegistration: defaults?.allowGuestRegistration ?? false,
+      swissRounds: defaults?.swissRounds,
     },
   });
+
+  const format = watch('format');
 
   const onSubmit = async (data: CreateTournamentInput) => {
     setSubmitting(true);
@@ -144,6 +149,17 @@ export default function TournamentForm({ mode, tournamentId, defaults }: Props) 
             ))}
           </select>
         </div>
+
+        {format === 'SWISS' && (
+          <TextField
+            label="Number of Swiss rounds"
+            type="number"
+            min="1"
+            max="20"
+            error={errors.swissRounds?.message}
+            {...register('swissRounds', { valueAsNumber: true })}
+          />
+        )}
 
         <div>
           <label htmlFor="entryType" className={labelClass}>

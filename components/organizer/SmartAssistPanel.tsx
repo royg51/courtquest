@@ -66,6 +66,12 @@ export default function SmartAssistPanel({
           {summary.matchesIfRoundRobin === 1 ? 'match' : 'matches'} total.
         </p>
       )}
+      {summary.recommendation.format === 'SWISS' && summary.recommendation.suggestedRounds && (
+        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          Suggested: {summary.recommendation.suggestedRounds} rounds. You can change this on the
+          Edit Details page before generating the bracket.
+        </p>
+      )}
 
       {!hasBracket && summary.confirmedTeams >= 2 && (
         <button

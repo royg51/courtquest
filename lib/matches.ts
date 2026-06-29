@@ -8,6 +8,7 @@
 import { db } from '@/lib/db';
 import { sendMatchReadyNotification, sendTournamentResults } from '@/lib/email';
 import { getRoundRobinStandings } from '@/lib/formats/round-robin';
+import { advanceSwissTournament } from '@/lib/formats/swiss';
 
 export class MatchError extends Error {
   code: string;
@@ -204,6 +205,26 @@ export async function submitScore(matchId: string, scores: { scoreA: number; sco
       );
       await db.tournament.update({ where: { id: tournamentId }, data: { status: 'COMPLETED' } });
       if (standings[0]) await notifyTournamentResults(tournamentId, standings[0].teamId);
+    }
+    return updatedMatch;
+  }
+
+  // Swiss: once every match in the current round has a result (scored or
+  // bye), either pair the next round or — once the configured round count is
+  // reached — finalize standings and complete the tournament.
+  if (format === 'SWISS') {
+    const remaining = await db.match.count({
+      where: { roundId: match.roundId, status: { in: ['PENDING', 'IN_PROGRESS'] } },
+    });
+    if (remaining === 0) {
+      const result = await advanceSwissTournament(tournamentId);
+      if (result.completed && result.championTeamId) {
+        await notifyTournamentResults(tournamentId, result.championTeamId);
+      } else {
+        for (const newMatchId of result.newMatchIds) {
+          await notifyIfNextMatchReady(newMatchId, tournamentId);
+        }
+      }
     }
     return updatedMatch;
   }

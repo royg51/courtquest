@@ -117,6 +117,10 @@ model Tournament {
   // organizer generates one, unique so a code maps to exactly one tournament.
   allowGuestRegistration Boolean  @default(false)
   inviteCode           String?    @unique
+  // Swiss only: organizer-configured number of rounds. Null for every other
+  // format. Validated/required at bracket-generation time, not at the
+  // database level, so other formats are unaffected.
+  swissRounds          Int?
   teams                Team[]
   bracket              Bracket?
   donations            Donation[]

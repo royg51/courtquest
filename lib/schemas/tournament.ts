@@ -38,6 +38,9 @@ const baseTournamentFields = {
   address: z.string().max(300).optional(),
   // Checkbox: react-hook-form sends a boolean; default to false when absent.
   allowGuestRegistration: z.coerce.boolean().optional().default(false),
+  // Swiss only — required when format is SWISS (enforced below), ignored
+  // otherwise.
+  swissRounds: optionalNumber(z.coerce.number().int().min(1).max(20)),
 };
 
 export const createTournamentSchema = z
@@ -49,6 +52,10 @@ export const createTournamentSchema = z
   .refine((d) => d.registrationDeadline <= d.startDate, {
     message: 'Registration deadline must be on or before the start date',
     path: ['registrationDeadline'],
+  })
+  .refine((d) => d.format !== 'SWISS' || d.swissRounds !== undefined, {
+    message: 'Number of rounds is required for Swiss tournaments',
+    path: ['swissRounds'],
   });
 
 export type CreateTournamentInput = z.infer<typeof createTournamentSchema>;
@@ -71,6 +78,7 @@ export const updateTournamentSchema = z.object({
   venue: z.string().max(200).optional(),
   address: z.string().max(300).optional(),
   allowGuestRegistration: z.coerce.boolean().optional(),
+  swissRounds: optionalNumber(z.coerce.number().int().min(1).max(20)),
   status: z.enum(['DRAFT', 'OPEN', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']).optional(),
 });
 

@@ -7,9 +7,11 @@ import { notFound } from 'next/navigation';
 import { getTournamentBySlug } from '@/lib/tournaments';
 import { getCourtQueues } from '@/lib/matches';
 import { getRoundRobinStandings } from '@/lib/formats/round-robin';
+import { getSwissStandings } from '@/lib/formats/swiss';
 import PublicBracketView from '@/components/bracket/PublicBracketView';
 import CourtQueues from '@/components/organizer/CourtQueues';
 import StandingsTable from '@/components/bracket/StandingsTable';
+import SwissStandingsTable from '@/components/bracket/SwissStandingsTable';
 import { pageMetadata } from '@/lib/seo';
 
 export async function generateMetadata({
@@ -33,16 +35,18 @@ export default async function BracketPage({ params }: { params: { slug: string }
   }
 
   const isRoundRobin = tournament.format === 'ROUND_ROBIN';
-  const [queues, standings] = await Promise.all([
+  const isSwiss = tournament.format === 'SWISS';
+  const [queues, standings, swissStandings] = await Promise.all([
     getCourtQueues(tournament.id),
     isRoundRobin ? getRoundRobinStandings(tournament.id) : Promise.resolve([]),
+    isSwiss ? getSwissStandings(tournament.id) : Promise.resolve([]),
   ]);
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-brand-700 dark:text-brand-400">
-          {tournament.name} — {isRoundRobin ? 'Standings' : 'Bracket'}
+          {tournament.name} — {isRoundRobin || isSwiss ? 'Standings' : 'Bracket'}
         </h1>
         <Link
           href={`/tournaments/${tournament.slug}/live`}
@@ -60,6 +64,13 @@ export default async function BracketPage({ params }: { params: { slug: string }
         <section className="mb-8">
           <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">Standings</h2>
           <StandingsTable rows={standings} />
+        </section>
+      )}
+
+      {isSwiss && swissStandings.length > 0 && (
+        <section className="mb-8">
+          <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">Standings</h2>
+          <SwissStandingsTable rows={swissStandings} />
         </section>
       )}
 

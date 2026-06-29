@@ -7,6 +7,7 @@ import { auth, requireRole } from '@/lib/auth';
 import { getTournamentById } from '@/lib/tournaments';
 import { generateSingleEliminationBracket, BracketError, notifyTournamentStarted } from '@/lib/bracket';
 import { generateRoundRobinBracket } from '@/lib/formats/round-robin';
+import { generateSwissBracket } from '@/lib/formats/swiss';
 import { recordAudit } from '@/lib/audit';
 import { isFormatImplemented } from '@/lib/sports';
 
@@ -27,8 +28,8 @@ export async function POST(_request: NextRequest, { params }: { params: { id: st
   }
 
   // Only formats with a working engine can generate. Selectable-but-not-yet
-  // built ones (double-elim, Swiss) are rejected explicitly rather than
-  // silently producing the wrong bracket.
+  // built ones (double-elim) are rejected explicitly rather than silently
+  // producing the wrong bracket.
   if (!isFormatImplemented(tournament.format)) {
     return NextResponse.json(
       {
@@ -43,7 +44,9 @@ export async function POST(_request: NextRequest, { params }: { params: { id: st
     const bracket =
       tournament.format === 'ROUND_ROBIN'
         ? await generateRoundRobinBracket(params.id)
-        : await generateSingleEliminationBracket(params.id);
+        : tournament.format === 'SWISS'
+          ? await generateSwissBracket(params.id)
+          : await generateSingleEliminationBracket(params.id);
 
     await recordAudit({
       actor: { id: session!.user.id, email: session!.user.email ?? null },

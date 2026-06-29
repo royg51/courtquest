@@ -64,21 +64,34 @@ export async function autoSeedByRanking(tournamentId: string): Promise<number> {
 }
 
 export interface FormatRecommendation {
-  format: 'SINGLE_ELIM' | 'ROUND_ROBIN';
+  format: 'SINGLE_ELIM' | 'ROUND_ROBIN' | 'SWISS';
   label: string;
   rationale: string;
+  suggestedRounds?: number;
 }
 
 // Recommends a format from the field size. Small fields play better as round
-// robin (everyone gets several matches and the result is fair); larger fields
-// run cleanly as single elimination. Double-elim/Swiss aren't recommended yet
-// because their engines aren't implemented.
+// robin (everyone gets several matches and the result is fair, and the total
+// match count stays manageable). Mid-size fields outgrow round robin's
+// quadratic match count but still benefit from more than one elimination
+// loss deciding the result, so Swiss fits — bounded rounds, paired by
+// record. Large fields run cleanest as single elimination. Double-elim isn't
+// recommended yet because its engine isn't implemented.
 export function recommendFormat(teamCount: number): FormatRecommendation {
   if (teamCount <= 6) {
     return {
       format: 'ROUND_ROBIN',
       label: 'Round Robin',
       rationale: `With ${teamCount} ${teamCount === 1 ? 'team' : 'teams'}, round robin gives everyone several matches and decides the winner fairly on overall record rather than a single bad draw.`,
+    };
+  }
+  if (teamCount <= 16) {
+    const suggestedRounds = Math.ceil(Math.log2(teamCount)) + 1;
+    return {
+      format: 'SWISS',
+      label: 'Swiss',
+      rationale: `A field of ${teamCount} is too large for round robin to stay manageable, but Swiss pairing over ${suggestedRounds} rounds still gives every team several matches against similarly-performing opponents instead of a single elimination loss.`,
+      suggestedRounds,
     };
   }
   return {

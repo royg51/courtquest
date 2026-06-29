@@ -139,6 +139,7 @@ export async function createTournament(
       venue: input.venue,
       address: input.address,
       allowGuestRegistration: input.allowGuestRegistration ?? false,
+      swissRounds: input.swissRounds ?? null,
     },
   });
 }
@@ -163,6 +164,7 @@ export async function updateTournament(id: string, input: UpdateTournamentInput)
   if (input.address !== undefined) data.address = input.address;
   if (input.allowGuestRegistration !== undefined)
     data.allowGuestRegistration = input.allowGuestRegistration;
+  if (input.swissRounds !== undefined) data.swissRounds = input.swissRounds;
   if (input.status !== undefined) data.status = input.status;
 
   if (input.entryType !== undefined) {

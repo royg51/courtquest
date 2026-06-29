@@ -19,7 +19,7 @@ interface FormatAdviceContext {
 export async function generateFormatAdvice(ctx: FormatAdviceContext): Promise<string | null> {
   if (!isAiConfigured()) return null;
 
-  const prompt = `You are a tournament operations assistant. In 2-3 sentences, recommend a bracket format (single elimination, round robin, double elimination, or Swiss) for a ${ctx.sport} tournament with ${ctx.teamCount} ${ctx.entryType === 'TEAM' ? 'teams' : 'players'}. Be concrete about why. Note that only single elimination and round robin are currently available to run.`;
+  const prompt = `You are a tournament operations assistant. In 2-3 sentences, recommend a bracket format (single elimination, round robin, or Swiss) for a ${ctx.sport} tournament with ${ctx.teamCount} ${ctx.entryType === 'TEAM' ? 'teams' : 'players'}. Be concrete about why. Note that double elimination is not currently available to run.`;
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {

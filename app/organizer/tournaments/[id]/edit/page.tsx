@@ -44,6 +44,7 @@ export default async function EditTournamentPage({ params }: { params: { id: str
     venue: tournament.venue ?? '',
     address: tournament.address ?? '',
     allowGuestRegistration: tournament.allowGuestRegistration,
+    ...(tournament.swissRounds != null ? { swissRounds: tournament.swissRounds } : {}),
   };
 
   return (
