@@ -6,6 +6,7 @@ import { auth, requireRole } from '@/lib/auth';
 import { getTournamentById } from '@/lib/tournaments';
 import { updateTeamStatus, withdrawTeam, RegistrationError } from '@/lib/teams';
 import { updateTeamStatusSchema } from '@/lib/schemas/team';
+import { db } from '@/lib/db';
 
 export async function PATCH(
   request: NextRequest,
@@ -20,6 +21,17 @@ export async function PATCH(
   const isOwner = session?.user?.id === tournament.organizerId;
   if (!isOwner && !requireRole(session, 'ADMIN')) {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
+  }
+
+  // Verify the team actually belongs to this tournament before mutating.
+  // Without this check, an organizer of tournament A who knows a team ID
+  // from tournament B could update team B's status.
+  const existingTeam = await db.team.findUnique({
+    where: { id: params.tid },
+    select: { tournamentId: true },
+  });
+  if (!existingTeam || existingTeam.tournamentId !== params.id) {
+    return NextResponse.json({ error: 'Not found', code: 'NOT_FOUND' }, { status: 404 });
   }
 
   let body: unknown;
@@ -48,6 +60,17 @@ export async function DELETE(
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
+  }
+
+  // Verify the team belongs to this tournament before allowing withdrawal.
+  // withdrawTeam checks membership/organizer via the team's own tournament,
+  // but the route should not let callers cross-reference arbitrary team IDs.
+  const existingTeam = await db.team.findUnique({
+    where: { id: params.tid },
+    select: { tournamentId: true },
+  });
+  if (!existingTeam || existingTeam.tournamentId !== params.id) {
+    return NextResponse.json({ error: 'Not found', code: 'NOT_FOUND' }, { status: 404 });
   }
 
   try {

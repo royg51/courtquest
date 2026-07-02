@@ -13,6 +13,17 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
   if (!tournament) {
     return NextResponse.json({ error: 'Not found', code: 'NOT_FOUND' }, { status: 404 });
   }
+
+  // Private tournaments are not exposed to unauthenticated or unauthorized callers.
+  if (!tournament.isPublic) {
+    const session = await auth();
+    const canView =
+      session?.user?.id === tournament.organizerId || session?.user?.role === 'ADMIN';
+    if (!canView) {
+      return NextResponse.json({ error: 'Not found', code: 'NOT_FOUND' }, { status: 404 });
+    }
+  }
+
   return NextResponse.json({ tournament });
 }
 

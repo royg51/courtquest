@@ -1,10 +1,13 @@
-// Browser-only Supabase client, used solely for Realtime subscriptions
-// (e.g. live donation updates on /donate). All actual data reads/writes
-// still go through Prisma — this client never queries tables directly.
+// Browser-only Supabase client, used solely for Realtime subscriptions (live
+// donation updates on /donate; live bracket/scores, tournament status,
+// registrations, and the admin audit log — see hooks/useSupabaseRealtime.ts).
+// All actual data reads/writes still go through Prisma — this client never
+// queries tables directly.
 //
 // NOTE: Supabase Realtime must be enabled for a table before subscriptions
 // receive anything. In the Supabase dashboard: Database -> Replication ->
-// toggle the Donation table on. This can't be done from application code.
+// toggle each table on (Donation, Match, Team, Tournament, AuditLog). This
+// can't be done from application code.
 
 import { createClient } from '@supabase/supabase-js';
 

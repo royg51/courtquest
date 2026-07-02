@@ -88,7 +88,7 @@ export async function generateInviteCode(tournamentId: string): Promise<string> 
 export const getTournamentByInviteCode = cache(async (code: string) => {
   return db.tournament.findUnique({
     where: { inviteCode: code.toUpperCase() },
-    select: { id: true, slug: true, name: true, status: true },
+    select: { id: true, slug: true, name: true, status: true, isPublic: true },
   });
 });
 

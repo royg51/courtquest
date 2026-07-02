@@ -3,6 +3,7 @@
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTeams } from '@/hooks/useRegistration';
+import { useRealtimeInvalidate } from '@/hooks/useSupabaseRealtime';
 import type { TeamWithMembers } from '@/lib/teams';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Users } from 'lucide-react';
@@ -21,6 +22,13 @@ const STATUS_STYLES: Record<string, string> = {
 export default function RegistrationsTable({ tournamentId }: Props) {
   const { data: teams, isLoading } = useTeams(tournamentId);
   const queryClient = useQueryClient();
+
+  // New registrations (or status/withdraw changes from another tab/organizer)
+  // show up live instead of needing a manual refresh.
+  useRealtimeInvalidate({ table: 'Team', filter: `tournamentId=eq.${tournamentId}` }, [
+    'teams',
+    tournamentId,
+  ]);
 
   const updateStatus = async (teamId: string, status: string) => {
     const res = await fetch(`/api/tournaments/${tournamentId}/teams/${teamId}`, {

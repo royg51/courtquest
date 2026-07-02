@@ -4,8 +4,6 @@ import { listTournaments } from '@/lib/tournaments';
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const tournaments = await listTournaments({ isPublic: true });
-
   // /login and /signup are intentionally absent — both are noindex
   // (see their page metadata), and a noindex page listed in the sitemap is
   // a contradictory signal to crawlers.
@@ -16,6 +14,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${APP_URL}/about`, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${APP_URL}/donate`, changeFrequency: 'monthly', priority: 0.6 },
   ];
+
+  let tournaments: Awaited<ReturnType<typeof listTournaments>> = [];
+  try {
+    tournaments = await listTournaments({ isPublic: true });
+  } catch (error) {
+    console.error('[sitemap] failed to load tournaments; returning static sitemap', error);
+  }
 
   const tournamentRoutes: MetadataRoute.Sitemap = tournaments.map((tournament) => ({
     url: `${APP_URL}/tournaments/${tournament.slug}`,

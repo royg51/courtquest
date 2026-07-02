@@ -47,14 +47,14 @@ export default async function PlayerProfilePage({ params }: { params: { id: stri
         </Link>
       </div>
 
-      <div className="mt-6 grid grid-cols-3 gap-4">
+      <div className="mt-6 grid grid-cols-3 gap-3">
         {stats.map(({ icon: Icon, label, value }) => (
           <div
             key={label}
-            className="rounded-lg border border-gray-200 p-4 text-center dark:border-gray-800"
+            className="rounded-lg border border-gray-200 p-2.5 text-center sm:p-4 dark:border-gray-800"
           >
             <Icon className="mx-auto h-5 w-5 text-brand-600 dark:text-brand-400" aria-hidden="true" />
-            <p className="mt-2 text-2xl font-bold text-gray-900 dark:text-gray-100">{value}</p>
+            <p className="mt-1.5 text-xl font-bold text-gray-900 sm:text-2xl dark:text-gray-100">{value}</p>
             <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
           </div>
         ))}

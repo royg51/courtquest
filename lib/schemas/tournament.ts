@@ -15,7 +15,13 @@ const optionalNumber = (schema: z.ZodNumber) =>
   );
 
 const sportEnum = z.enum(SPORTS as unknown as [string, ...string[]]);
-const formatEnum = z.enum(FORMATS.map((f) => f.value) as unknown as [string, ...string[]]);
+// Only accept formats that have a working bracket engine. Unimplemented formats
+// (DOUBLE_ELIM, SWISS) are listed in FORMATS for display/roadmap purposes but
+// must never reach createTournament or bracket generation.
+const IMPLEMENTED_FORMAT_VALUES = FORMATS.filter((f) => f.implemented).map((f) => f.value);
+const formatEnum = z.enum(
+  IMPLEMENTED_FORMAT_VALUES as unknown as [string, ...string[]]
+);
 const entryTypeEnum = z.enum(ENTRY_TYPES.map((e) => e.value) as unknown as [string, ...string[]]);
 
 // Dates arrive from <input type="date"> as "YYYY-MM-DD" strings. z.coerce.date
@@ -71,7 +77,11 @@ export const updateTournamentSchema = z.object({
   venue: z.string().max(200).optional(),
   address: z.string().max(300).optional(),
   allowGuestRegistration: z.coerce.boolean().optional(),
-  status: z.enum(['DRAFT', 'OPEN', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']).optional(),
+  // Only DRAFT, OPEN, and CANCELLED are valid via the API. IN_PROGRESS is set
+  // exclusively by bracket generation; COMPLETED is set by score submission
+  // completing the final match. Accepting them here would let an organizer
+  // corrupt tournament state without generating a bracket or scoring matches.
+  status: z.enum(['DRAFT', 'OPEN', 'CANCELLED']).optional(),
 });
 
 export type UpdateTournamentInput = z.infer<typeof updateTournamentSchema>;

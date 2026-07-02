@@ -4,10 +4,16 @@
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import nextDynamic from 'next/dynamic';
 import { redirect } from 'next/navigation';
 import { auth, requireRole } from '@/lib/auth';
 import { listAuditLogs } from '@/lib/audit';
 import AuditLogTable from '@/components/admin/AuditLogTable';
+
+const AuditLogRefresher = nextDynamic(
+  () => import('@/components/realtime/AuditLogRefresher').then((m) => m.AuditLogRefresher),
+  { ssr: false }
+);
 
 export const metadata: Metadata = { title: 'Audit Log' };
 export const dynamic = 'force-dynamic';
@@ -30,6 +36,7 @@ export default async function AdminAuditPage({
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8">
+      <AuditLogRefresher enabled={page === 1} />
       <h1 className="mb-2 text-2xl font-bold text-brand-700 dark:text-brand-400">Audit Log</h1>
       <p className="mb-6 text-sm text-gray-600 dark:text-gray-400">
         Every privileged action — role changes, match-score overrides, bracket generation, and

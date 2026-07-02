@@ -14,7 +14,11 @@ import { getAssistSummary } from '@/lib/ai-assist';
 import { generateFormatAdvice } from '@/lib/ai';
 import { FORMATS } from '@/lib/sports';
 
+import type { Metadata } from 'next';
+
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+
+export const metadata: Metadata = { title: 'Manage Tournament' };
 
 export default async function OrganizerTournamentPage({
   params,

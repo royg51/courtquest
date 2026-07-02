@@ -2,6 +2,7 @@
 // Handles all registration logic: capacity checks, status transitions,
 // team creation with guest member support.
 
+import { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
 
 export async function getTeamsForTournament(
@@ -98,11 +99,6 @@ export async function registerTeam(
     }
   }
 
-  const activeTeamCount = await db.team.count({
-    where: { tournamentId, status: { in: ['PENDING', 'CONFIRMED'] } },
-  });
-  const status = activeTeamCount >= tournament.maxParticipants ? 'WAITLISTED' : 'CONFIRMED';
-
   const primaryMember =
     'userId' in primary
       ? { userId: primary.userId, isPrimary: true, skillLevel: data.skillLevel, waiverAccepted: data.waiverAccepted }
@@ -115,31 +111,77 @@ export async function registerTeam(
           waiverAccepted: data.waiverAccepted,
         };
 
-  return db.team.create({
-    data: {
-      tournamentId,
-      name: data.teamName,
-      status,
-      members: {
-        create: [
-          primaryMember,
-          ...(data.partner
-            ? [
-                {
-                  userId: data.partner.userId,
-                  guestName: data.partner.guestName,
-                  guestEmail: data.partner.guestEmail,
-                  guestPhone: data.partner.guestPhone,
-                  isPrimary: false,
-                  waiverAccepted: data.waiverAccepted,
-                },
-              ]
-            : []),
-        ],
-      },
-    },
-    include: { members: true },
-  });
+  const membersData = [
+    primaryMember,
+    ...(data.partner
+      ? [
+          {
+            userId: data.partner.userId,
+            guestName: data.partner.guestName,
+            guestEmail: data.partner.guestEmail,
+            guestPhone: data.partner.guestPhone,
+            isPrimary: false,
+            waiverAccepted: data.waiverAccepted,
+          },
+        ]
+      : []),
+  ];
+
+  // For tournaments that require payment, the initial status is PENDING
+  // (registered but not yet eligible for bracket generation). The Stripe
+  // webhook promotes PENDING → CONFIRMED once payment lands. For free
+  // tournaments, the team is CONFIRMED immediately.
+  //
+  // The capacity count and create run in a SERIALIZABLE transaction so
+  // concurrent registrations can't both read "1 slot left" and both become
+  // CONFIRMED — PostgreSQL will abort and retry one of them on conflict.
+  const MAX_RETRIES = 3;
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      return await db.$transaction(
+        async (tx) => {
+          // Re-count inside the transaction for a fresh, consistent read.
+          const activeTeamCount = await tx.team.count({
+            where: { tournamentId, status: { in: ['PENDING', 'CONFIRMED'] } },
+          });
+
+          let status: string;
+          if (activeTeamCount >= tournament.maxParticipants) {
+            status = 'WAITLISTED';
+          } else if (tournament.requiresPayment) {
+            // Awaiting payment — not yet bracket-eligible.
+            status = 'PENDING';
+          } else {
+            status = 'CONFIRMED';
+          }
+
+          return tx.team.create({
+            data: {
+              tournamentId,
+              name: data.teamName,
+              status,
+              members: { create: membersData },
+            },
+            include: { members: true },
+          });
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      );
+    } catch (e) {
+      // P2034 = serialization failure — retry up to MAX_RETRIES times.
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2034' &&
+        attempt < MAX_RETRIES - 1
+      ) {
+        continue;
+      }
+      throw e;
+    }
+  }
+
+  // TypeScript needs this but the loop above always returns or throws.
+  throw new RegistrationError('INTERNAL', 'Registration failed after retries');
 }
 
 export async function updateTeamStatus(

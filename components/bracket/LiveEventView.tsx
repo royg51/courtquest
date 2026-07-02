@@ -1,9 +1,10 @@
 'use client';
 
-// Full-screen "TV / event host" view. Polls the bracket fast (10s) and shows
-// what a spectator or a screen at the venue wants: matches happening now,
-// what's up next on each court, and the latest results. Works for any format
-// (derives everything from the bracket tree).
+// Full-screen "TV / event host" view — shows what a spectator or a screen at
+// the venue wants: matches happening now, what's up next on each court, and
+// the latest results. Works for any format (derives everything from the
+// bracket tree). Updates arrive instantly via Realtime (see useBracket); the
+// 20s interval here is just a safety net for a dropped websocket.
 
 import Link from 'next/link';
 import { useBracket } from '@/hooks/useBracket';
@@ -33,7 +34,7 @@ function Score({ match }: { match: FlatMatch }) {
 }
 
 export default function LiveEventView({ tournamentId, tournamentName, tournamentSlug, isLive }: Props) {
-  const { data: bracket } = useBracket(tournamentId, true, 10_000);
+  const { data: bracket } = useBracket(tournamentId, true, 20_000);
 
   const all = bracket ? flatten(bracket.rounds) : [];
   const live = all.filter((m) => m.status === 'IN_PROGRESS');

@@ -136,10 +136,9 @@ export default function TournamentForm({ mode, tournamentId, defaults }: Props) 
             Format
           </label>
           <select id="format" className={selectClass} {...register('format')}>
-            {FORMATS.map((f) => (
-              <option key={f.value} value={f.value} disabled={!f.implemented}>
+            {FORMATS.filter((f) => f.implemented).map((f) => (
+              <option key={f.value} value={f.value}>
                 {f.label}
-                {f.implemented ? '' : ' (coming soon)'}
               </option>
             ))}
           </select>

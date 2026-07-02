@@ -67,10 +67,12 @@ export async function generateSingleEliminationBracket(tournamentId: string) {
   if (tournament.bracket) {
     throw new BracketError('ALREADY_EXISTS', 'Bracket already generated for this tournament');
   }
-  if (tournament.teams.length < 2) {
+  // Enforce minParticipants, but never go below the hard minimum of 2.
+  const minRequired = Math.max(2, tournament.minParticipants);
+  if (tournament.teams.length < minRequired) {
     throw new BracketError(
       'NOT_ENOUGH_TEAMS',
-      'Need at least 2 confirmed teams to generate a bracket'
+      `Need at least ${minRequired} confirmed team${minRequired === 1 ? '' : 's'} to generate a bracket`
     );
   }
 

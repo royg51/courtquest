@@ -12,7 +12,12 @@ export default async function JoinByCodePage({ params }: { params: { code: strin
   const tournament = await getTournamentByInviteCode(params.code);
 
   if (tournament) {
-    redirect(`/tournaments/${tournament.slug}`);
+    // Private tournaments require the invite code as a query param so the
+    // detail page (and sub-pages) can verify it and grant access.
+    const dest = tournament.isPublic
+      ? `/tournaments/${tournament.slug}`
+      : `/tournaments/${tournament.slug}?invite=${encodeURIComponent(params.code)}`;
+    redirect(dest);
   }
 
   return (

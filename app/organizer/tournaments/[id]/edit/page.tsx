@@ -3,8 +3,11 @@
 // per the requirement that these stay editable later. Status transitions
 // (open/close registration) live on the manage page, not here.
 
+import type { Metadata } from 'next';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
+
+export const metadata: Metadata = { title: 'Edit Tournament | Organizer' };
 import { auth, requireRole } from '@/lib/auth';
 import { getTournamentById } from '@/lib/tournaments';
 import TournamentForm, { type TournamentFormDefaults } from '@/components/tournament/TournamentForm';

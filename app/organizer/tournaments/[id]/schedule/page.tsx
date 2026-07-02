@@ -1,6 +1,7 @@
 // Organizer match scheduling — owner organizer or ADMIN only. Auto-assign
 // courts, set per-match court + time, and see the per-court "next up" queue.
 
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect, notFound } from 'next/navigation';
 import { auth, requireRole } from '@/lib/auth';
@@ -12,6 +13,7 @@ import MatchScheduleEditor, {
 } from '@/components/organizer/MatchScheduleEditor';
 import CourtQueues from '@/components/organizer/CourtQueues';
 
+export const metadata: Metadata = { title: 'Schedule | Organizer' };
 export const dynamic = 'force-dynamic';
 
 export default async function SchedulePage({ params }: { params: { id: string } }) {

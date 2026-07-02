@@ -54,8 +54,10 @@ export async function POST(_request: NextRequest, { params }: { params: { id: st
       metadata: { tournamentId: params.id, tournamentSlug: tournament.slug },
     });
 
-    // Tell participants play has started. Non-blocking (sends swallow errors).
-    await notifyTournamentStarted(params.id);
+    // Tell participants play has started. Non-blocking: a DB/network error
+    // in the notification must never 500 the response — the bracket is already
+    // committed and the client would incorrectly think generation failed.
+    await notifyTournamentStarted(params.id).catch(() => undefined);
 
     return NextResponse.json({ bracket }, { status: 201 });
   } catch (error) {

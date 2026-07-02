@@ -11,7 +11,9 @@ interface Props {
 }
 
 export default function OrganizerBracketView({ tournamentId }: Props) {
-  const { data: bracket, isLoading } = useBracket(tournamentId);
+  // isLive: true enables the Realtime subscription so a score entered by
+  // another organizer/admin on the same tournament shows up immediately.
+  const { data: bracket, isLoading } = useBracket(tournamentId, true);
   const queryClient = useQueryClient();
 
   if (isLoading) {

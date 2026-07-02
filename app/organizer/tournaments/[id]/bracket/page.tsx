@@ -1,6 +1,7 @@
 // Organizer bracket management page. Generate happens from the tournament
 // overview page; this page is for viewing + entering scores.
 
+import type { Metadata } from 'next';
 import { redirect, notFound } from 'next/navigation';
 import { auth, requireRole } from '@/lib/auth';
 import { getTournamentById } from '@/lib/tournaments';
@@ -8,6 +9,7 @@ import { getRoundRobinStandings } from '@/lib/formats/round-robin';
 import OrganizerBracketView from '@/components/bracket/OrganizerBracketView';
 import StandingsTable from '@/components/bracket/StandingsTable';
 
+export const metadata: Metadata = { title: 'Bracket | Organizer' };
 export const dynamic = 'force-dynamic';
 
 export default async function OrganizerBracketPage({ params }: { params: { id: string } }) {

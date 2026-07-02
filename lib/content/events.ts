@@ -1,9 +1,8 @@
-// Static historical/marketing content for real-world past events — these
-// predate (or aren't modeled as) live Tournament records in the database,
-// so they're plain content data, not a Prisma model.
-//
-// To add photos: drop a Google Drive (or other) album link into
-// `photoAlbumUrl` below. Leave it undefined to show "Photos coming soon".
+// Static historical/marketing content for real-world past events.
+// Photo arrays are sourced from lib/media.ts — add or swap images there.
+
+import type { MediaPhoto } from '@/lib/media';
+import { TOURNAMENT_GALLERIES } from '@/lib/media';
 
 export interface PastEvent {
   name: string;
@@ -15,6 +14,7 @@ export interface PastEvent {
   cause?: string;
   stats: { label: string; value: string }[];
   photoAlbumUrl?: string;
+  photos?: MediaPhoto[];
 }
 
 export const PAST_EVENTS: PastEvent[] = [
@@ -30,6 +30,7 @@ export const PAST_EVENTS: PastEvent[] = [
       { label: 'Raised', value: '$1,200' },
     ],
     photoAlbumUrl: undefined,
+    photos: TOURNAMENT_GALLERIES['rally-royale'],
   },
   {
     name: "Chill N' Dill",
@@ -43,5 +44,6 @@ export const PAST_EVENTS: PastEvent[] = [
       { label: 'Raised', value: '$1,600+' },
     ],
     photoAlbumUrl: undefined,
+    photos: TOURNAMENT_GALLERIES['chill-n-dill'],
   },
 ];
