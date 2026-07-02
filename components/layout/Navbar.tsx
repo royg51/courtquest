@@ -13,6 +13,7 @@ import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 const NAV_LINKS = [
   { href: '/events', label: 'Events' },
+  { href: '/leaderboard', label: 'Leaderboard' },
   { href: '/about', label: 'About' },
   { href: '/donate', label: 'Donate' },
 ];

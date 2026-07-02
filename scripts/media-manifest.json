@@ -1,0 +1,51 @@
+{
+  "_description": "Curated CourtQuest tournament media. Run scripts/cleanup-media.js to move all non-keep files in /public/tournaments/ to /Trash_CourtQuest/. The script is non-destructive — all moved files can be recovered from that folder.",
+
+  "keep": {
+    "chill-n-dill": [
+      "tournaments/Chill N' Dill/Chill N' Dill Photos/181-DSC06429.jpg",
+      "tournaments/Chill N' Dill/Chill N' Dill Photos/161-DSC06461.jpg",
+      "tournaments/Chill N' Dill/Chill N' Dill Photos/425-DSC06143.jpg",
+      "tournaments/Chill N' Dill/Chill N' Dill Photos/408-DSC06163.jpg",
+      "tournaments/Chill N' Dill/Chill N' Dill Photos/430-DSC06135.jpg",
+      "tournaments/Chill N' Dill/Chill N' Dill Photos/1-DSC06667.jpg",
+      "tournaments/Chill N' Dill/Chill N' Dill Photos/23-DSC06653.jpg",
+      "tournaments/Chill N' Dill/Chill N' Dill Photos/32-DSC06641.jpg",
+      "tournaments/Chill N' Dill/Chill N' Dill Photos/51-DSC06611.jpg",
+      "tournaments/Chill N' Dill/Chill N' Dill Photos/216-DSC06392.jpg",
+      "tournaments/Chill N' Dill/Chill N' Dill Photos/235-DSC06370.jpg",
+      "tournaments/Chill N' Dill/Chill N' Dill Photos/251-DSC06350.jpg",
+      "tournaments/Chill N' Dill/Chill N' Dill Photos/300-DSC06298.jpg",
+      "tournaments/Chill N' Dill/Chill N' Dill Photos/348-DSC06242.jpg",
+      "tournaments/Chill N' Dill/Chill N' Dill Photos/378-DSC06205.jpg",
+      "tournaments/Chill N' Dill/Chill N' Dill Photos/402-DSC06171.jpg",
+      "tournaments/Chill N' Dill/Chill N' Dill Photos/455-DSC06112.jpg",
+      "tournaments/Chill N' Dill/Chill N' Dill Photos/468-DSC06097.jpg"
+    ],
+    "rally-royale-photos": [
+      "tournaments/Rally Royale/Rally Royale Pictures/groupPhoto-ClosingCeremony.jpg",
+      "tournaments/Rally Royale/Rally Royale Pictures/IMG_4641.JPG",
+      "tournaments/Rally Royale/Rally Royale Pictures/IMG_4631.JPG",
+      "tournaments/Rally Royale/Rally Royale Pictures/IMG_4632.JPG",
+      "tournaments/Rally Royale/Rally Royale Pictures/IMG_4637.JPG",
+      "tournaments/Rally Royale/Rally Royale Pictures/IMG_4720.JPG",
+      "tournaments/Rally Royale/Rally Royale Pictures/IMG_4670.JPG",
+      "tournaments/Rally Royale/Rally Royale Pictures/IMG_4669.JPG",
+      "tournaments/Rally Royale/Rally Royale Pictures/IMG_4701.JPG",
+      "tournaments/Rally Royale/Rally Royale Pictures/IMG_4705.JPG",
+      "tournaments/Rally Royale/Rally Royale Pictures/IMG_4706.JPG",
+      "tournaments/Rally Royale/Rally Royale Pictures/IMG_4707.JPG"
+    ],
+    "rally-royale-video": [
+      "tournaments/Rally Royale/Videos1/ClosingCeremony.mp4"
+    ]
+  },
+
+  "delete-rationale": {
+    "chill-n-dill-rejected": "~479 photos not in the keep list above — burst duplicates, repetitive angles, lower detail. All moved to /Trash_CourtQuest/, not permanently deleted.",
+    "rally-royale-heic": "19 HEIC files (IMG_4620, 4623, 4624, 4628, 4650-4653, 4659-4664, 4672, 4675-4677, 4725) — HEIC format is not natively supported by web browsers without server-side conversion.",
+    "rally-royale-small-jpgs": "IMG_4709.JPG (231KB), IMG_4714.JPG (196KB) — too small/low quality relative to other selections.",
+    "rally-royale-misc": "ChipotleOrder.jpg — catering order receipt, not a tournament photo.",
+    "rally-royale-videos": "All Videos1/*.MOV, Videos2/*.MOV, lastGames-002.mov except ClosingCeremony.mp4 — raw unedited clips, too large for web use."
+  }
+}

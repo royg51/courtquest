@@ -12,6 +12,7 @@
 //   8. Persist everything in a single Prisma transaction
 
 import { db } from '@/lib/db';
+import { sendTournamentStarted } from '@/lib/email';
 import type { BracketTree, MatchStatus } from '@/types';
 
 export class BracketError extends Error {
@@ -66,10 +67,12 @@ export async function generateSingleEliminationBracket(tournamentId: string) {
   if (tournament.bracket) {
     throw new BracketError('ALREADY_EXISTS', 'Bracket already generated for this tournament');
   }
-  if (tournament.teams.length < 2) {
+  // Enforce minParticipants, but never go below the hard minimum of 2.
+  const minRequired = Math.max(2, tournament.minParticipants);
+  if (tournament.teams.length < minRequired) {
     throw new BracketError(
       'NOT_ENOUGH_TEAMS',
-      'Need at least 2 confirmed teams to generate a bracket'
+      `Need at least ${minRequired} confirmed team${minRequired === 1 ? '' : 's'} to generate a bracket`
     );
   }
 
@@ -144,6 +147,35 @@ export async function generateSingleEliminationBracket(tournamentId: string) {
 
     return bracket;
   });
+}
+
+// Emails every registered participant that the bracket is drawn and play has
+// started. Non-blocking by design (each send swallows its own errors) — called
+// after a bracket is generated, for any format.
+export async function notifyTournamentStarted(tournamentId: string): Promise<void> {
+  const tournament = await db.tournament.findUnique({
+    where: { id: tournamentId },
+    select: {
+      name: true,
+      slug: true,
+      teams: { include: { members: { include: { user: true } } } },
+    },
+  });
+  if (!tournament) return;
+
+  for (const team of tournament.teams) {
+    for (const member of team.members) {
+      const to = member.user?.email ?? member.guestEmail;
+      const name = member.user?.name ?? member.guestName;
+      if (!to || !name) continue;
+      await sendTournamentStarted({
+        to,
+        name,
+        tournamentName: tournament.name,
+        tournamentSlug: tournament.slug,
+      });
+    }
+  }
 }
 
 // Returns the bracket tree denormalized for the frontend

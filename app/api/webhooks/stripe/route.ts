@@ -12,21 +12,63 @@ import { constructWebhookEvent, isStripeConfigured } from '@/lib/payments';
 import { db } from '@/lib/db';
 import { sendDonationThankYou, sendPaymentConfirmation } from '@/lib/email';
 
-async function markRegistrationPaid(teamId: string, stripePaymentId: string) {
+async function markRegistrationPaid(
+  teamId: string,
+  stripePaymentId: string,
+  paidAmountCents: number,
+  metaTournamentId?: string | null,
+) {
   // checkout.session.completed and payment_intent.succeeded can both fire
   // for the same payment — check current status first so the confirmation
   // email only goes out once, on whichever event lands first.
-  const before = await db.team.findUnique({ where: { id: teamId }, select: { paymentStatus: true } });
-  const alreadyPaid = before?.paymentStatus === 'PAID';
+  const before = await db.team.findUnique({
+    where: { id: teamId },
+    select: { paymentStatus: true, status: true, tournamentId: true },
+  });
+
+  if (!before) {
+    // Team was deleted between checkout creation and webhook delivery — ignore.
+    console.warn(`[stripe webhook] markRegistrationPaid: team ${teamId} not found, skipping`);
+    return;
+  }
+
+  // Verify the teamId belongs to the tournament stored in the Stripe metadata.
+  // This prevents a crafted webhook replay from crediting a payment to the
+  // wrong team by supplying a mismatched tournamentId/teamId pair.
+  if (metaTournamentId && before.tournamentId !== metaTournamentId) {
+    console.warn(
+      `[stripe webhook] tournamentId mismatch: meta=${metaTournamentId}, team.tournamentId=${before.tournamentId}`
+    );
+    return;
+  }
+
+  const alreadyPaid = before.paymentStatus === 'PAID';
+
+  // Promote PENDING → CONFIRMED on payment so teams are eligible for bracket
+  // generation. WAITLISTED teams stay WAITLISTED (organizer manages those).
+  const newStatus = before.status === 'PENDING' ? 'CONFIRMED' : undefined;
 
   const team = await db.team.update({
     where: { id: teamId },
-    data: { paymentStatus: 'PAID', stripePaymentId },
+    data: {
+      paymentStatus: 'PAID',
+      stripePaymentId,
+      ...(newStatus ? { status: newStatus } : {}),
+    },
     include: {
       tournament: { select: { name: true, slug: true, entryFeeCents: true } },
       members: { where: { isPrimary: true }, include: { user: true } },
     },
   });
+
+  // Soft-check: warn if the paid amount is less than the entry fee (e.g. a
+  // coupon applied outside our system). Don't reject — Stripe is the source
+  // of truth for payment completion; just log for manual review.
+  if (paidAmountCents > 0 && paidAmountCents < team.tournament.entryFeeCents) {
+    console.warn(
+      `[stripe webhook] underpayment: expected ${team.tournament.entryFeeCents}¢, received ${paidAmountCents}¢ for team ${teamId}`
+    );
+  }
 
   if (alreadyPaid) return;
 
@@ -116,7 +158,12 @@ export async function POST(request: NextRequest) {
         typeof session.payment_intent === 'string' ? session.payment_intent : session.id;
 
       if (type === 'registration' && teamId) {
-        await markRegistrationPaid(teamId, stripePaymentId);
+        await markRegistrationPaid(
+          teamId,
+          stripePaymentId,
+          session.amount_total ?? 0,
+          session.metadata?.tournamentId ?? null,
+        );
       } else if (type === 'donation') {
         await recordDonation({
           amountCents: session.amount_total ?? 0,
@@ -137,7 +184,12 @@ export async function POST(request: NextRequest) {
       const { type, teamId } = paymentIntent.metadata ?? {};
 
       if (type === 'registration' && teamId) {
-        await markRegistrationPaid(teamId, paymentIntent.id);
+        await markRegistrationPaid(
+          teamId,
+          paymentIntent.id,
+          paymentIntent.amount,
+          paymentIntent.metadata?.tournamentId ?? null,
+        );
       } else if (type === 'donation') {
         await recordDonation({
           amountCents: paymentIntent.amount,

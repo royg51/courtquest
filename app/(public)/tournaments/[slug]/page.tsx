@@ -2,6 +2,7 @@
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import nextDynamic from 'next/dynamic';
 import { notFound } from 'next/navigation';
 import { CheckCircle2, XCircle } from 'lucide-react';
 import { auth } from '@/lib/auth';
@@ -11,13 +12,30 @@ import PublicBracketView from '@/components/bracket/PublicBracketView';
 import { PayEntryFeeButton } from '@/components/registration/PayEntryFeeButton';
 import { pageMetadata } from '@/lib/seo';
 
+// Lazy-loaded with no SSR — same reasoning as the live-donations refresher:
+// pulls in @supabase/supabase-js, only needed for the realtime subscription.
+const TournamentStatusRefresher = nextDynamic(
+  () => import('@/components/realtime/TournamentStatusRefresher').then((m) => m.TournamentStatusRefresher),
+  { ssr: false }
+);
+
 export async function generateMetadata({
   params,
 }: {
   params: { slug: string };
 }): Promise<Metadata> {
-  const tournament = await getTournamentBySlug(params.slug);
+  const [tournament, session] = await Promise.all([
+    getTournamentBySlug(params.slug),
+    auth(),
+  ]);
   if (!tournament) return {};
+
+  // Don't leak title/description for private tournaments to unauthorized visitors.
+  if (!tournament.isPublic) {
+    const canView =
+      session?.user?.id === tournament.organizer.id || session?.user?.role === 'ADMIN';
+    if (!canView) return {};
+  }
 
   const description =
     tournament.description ??
@@ -35,19 +53,39 @@ export default async function TournamentDetailPage({
   searchParams,
 }: {
   params: { slug: string };
-  searchParams: { payment?: string };
+  searchParams: { payment?: string; invite?: string };
 }) {
-  const tournament = await getTournamentBySlug(params.slug);
+  // Fetch tournament and session in parallel; session is needed for the
+  // isPublic gate before any other data is loaded.
+  const [tournament, session] = await Promise.all([
+    getTournamentBySlug(params.slug),
+    auth(),
+  ]);
 
   if (!tournament) {
     notFound();
+  }
+
+  // Private tournaments: accessible to the organizer, admins, OR anyone
+  // presenting a valid invite code (?invite=CODE from /join/[code]).
+  if (!tournament.isPublic) {
+    const hasInvite =
+      !!searchParams.invite &&
+      !!tournament.inviteCode &&
+      searchParams.invite.toUpperCase() === tournament.inviteCode;
+    const canView =
+      hasInvite ||
+      session?.user?.id === tournament.organizer.id ||
+      session?.user?.role === 'ADMIN';
+    if (!canView) {
+      notFound();
+    }
   }
 
   const teams = await getTeamsForTournament(tournament.id);
   const confirmedTeams = teams.filter((team) => team.status === 'CONFIRMED');
   const waitlistedCount = teams.filter((team) => team.status === 'WAITLISTED').length;
 
-  const session = await auth();
   const myTeam = session?.user
     ? await getUserTeamForTournament(tournament.id, session.user.id)
     : null;
@@ -78,6 +116,7 @@ export default async function TournamentDetailPage({
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-8">
+      <TournamentStatusRefresher tournamentId={tournament.id} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(eventJsonLd) }}
@@ -133,7 +172,7 @@ export default async function TournamentDetailPage({
       {tournament.status === 'OPEN' && !myTeam && (
         <div className="mt-6">
           <Link
-            href={`/tournaments/${tournament.slug}/register`}
+            href={`/tournaments/${tournament.slug}/register${searchParams.invite ? `?invite=${encodeURIComponent(searchParams.invite)}` : ''}`}
             className="rounded-md bg-brand-600 px-5 py-2.5 font-medium text-white transition-colors hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
           >
             Register

@@ -1,10 +1,13 @@
 // Organizer registration management page.
 // Lists all teams with status controls: confirm, waitlist, withdraw.
 
+import type { Metadata } from 'next';
 import { redirect, notFound } from 'next/navigation';
 import { auth, requireRole } from '@/lib/auth';
 import { getTournamentById } from '@/lib/tournaments';
 import RegistrationsTable from '@/components/organizer/RegistrationsTable';
+
+export const metadata: Metadata = { title: 'Registrations | Organizer' };
 
 export default async function RegistrationsPage({ params }: { params: { id: string } }) {
   const session = await auth();

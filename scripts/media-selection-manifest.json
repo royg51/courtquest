@@ -1,0 +1,294 @@
+{
+  "_version": "2.0",
+  "_generated": "2026-06-30",
+  "_selection_criteria": [
+    "File size proxy for sharpness: HEIC files are excluded (browser-incompatible), JPG/MP4 only",
+    "Burst deduplication: consecutive DSC numbers within 15 steps are treated as the same shot; only the highest-quality frame is kept",
+    "Timeline diversity: selections span the full event sequence from early arrival through closing ceremony",
+    "Content diversity: early event, court action, community, closing ceremony, awards all represented",
+    "Performance: 16 Chill N Dill + 12 Rally Royale photos + 1 video = 29 files total from 573"
+  ],
+  "_source_root": "public/",
+  "_destination_root": "public/media/tournaments/",
+  "_note": "Run scripts/move-media.js after reviewing. Existing UI code that references the old paths MUST be updated after the move.",
+
+  "keep": {
+    "chill-dill": [
+      {
+        "src": "tournaments/Chill N' Dill/Chill N' Dill Photos/468-DSC06097.jpg",
+        "dest": "media/tournaments/chill-dill/468-DSC06097.jpg",
+        "size_bytes": 559192,
+        "dsc": 6097,
+        "reason": "Early event — DSC range 6089-6110"
+      },
+      {
+        "src": "tournaments/Chill N' Dill/Chill N' Dill Photos/455-DSC06112.jpg",
+        "dest": "media/tournaments/chill-dill/455-DSC06112.jpg",
+        "size_bytes": 537621,
+        "dsc": 6112,
+        "reason": "Early event — DSC+15 from 6097"
+      },
+      {
+        "src": "tournaments/Chill N' Dill/Chill N' Dill Photos/425-DSC06143.jpg",
+        "dest": "media/tournaments/chill-dill/425-DSC06143.jpg",
+        "size_bytes": 612785,
+        "dsc": 6143,
+        "reason": "Court action — best quality from DSC 6135-6165 burst cluster (612KB)"
+      },
+      {
+        "src": "tournaments/Chill N' Dill/Chill N' Dill Photos/408-DSC06163.jpg",
+        "dest": "media/tournaments/chill-dill/408-DSC06163.jpg",
+        "size_bytes": 602399,
+        "dsc": 6163,
+        "reason": "Court action — DSC+20 from 6143, distinct shot within cluster"
+      },
+      {
+        "src": "tournaments/Chill N' Dill/Chill N' Dill Photos/378-DSC06205.jpg",
+        "dest": "media/tournaments/chill-dill/378-DSC06205.jpg",
+        "size_bytes": 562380,
+        "dsc": 6205,
+        "reason": "Different court section — DSC+42 from 6163"
+      },
+      {
+        "src": "tournaments/Chill N' Dill/Chill N' Dill Photos/348-DSC06242.jpg",
+        "dest": "media/tournaments/chill-dill/348-DSC06242.jpg",
+        "size_bytes": 529195,
+        "dsc": 6242,
+        "reason": "Mid-event action — DSC+37 from 6205"
+      },
+      {
+        "src": "tournaments/Chill N' Dill/Chill N' Dill Photos/300-DSC06298.jpg",
+        "dest": "media/tournaments/chill-dill/300-DSC06298.jpg",
+        "size_bytes": 525649,
+        "dsc": 6298,
+        "reason": "Mid-event — DSC+56 from 6242"
+      },
+      {
+        "src": "tournaments/Chill N' Dill/Chill N' Dill Photos/251-DSC06350.jpg",
+        "dest": "media/tournaments/chill-dill/251-DSC06350.jpg",
+        "size_bytes": 557945,
+        "dsc": 6350,
+        "reason": "Action sequence — DSC+52 from 6298"
+      },
+      {
+        "src": "tournaments/Chill N' Dill/Chill N' Dill Photos/235-DSC06370.jpg",
+        "dest": "media/tournaments/chill-dill/235-DSC06370.jpg",
+        "size_bytes": 533335,
+        "dsc": 6370,
+        "reason": "Action sequence — DSC+20 from 6350"
+      },
+      {
+        "src": "tournaments/Chill N' Dill/Chill N' Dill Photos/216-DSC06392.jpg",
+        "dest": "media/tournaments/chill-dill/216-DSC06392.jpg",
+        "size_bytes": 547364,
+        "dsc": 6392,
+        "reason": "Court action — DSC+22 from 6370"
+      },
+      {
+        "src": "tournaments/Chill N' Dill/Chill N' Dill Photos/181-DSC06429.jpg",
+        "dest": "media/tournaments/chill-dill/181-DSC06429.jpg",
+        "size_bytes": 751831,
+        "dsc": 6429,
+        "reason": "HERO SHOT — largest file in entire collection (751KB), DSC+37 from 6392"
+      },
+      {
+        "src": "tournaments/Chill N' Dill/Chill N' Dill Photos/161-DSC06461.jpg",
+        "dest": "media/tournaments/chill-dill/161-DSC06461.jpg",
+        "size_bytes": 635331,
+        "dsc": 6461,
+        "reason": "Peak action — 2nd largest file (635KB), DSC+32 from 6429"
+      },
+      {
+        "src": "tournaments/Chill N' Dill/Chill N' Dill Photos/51-DSC06611.jpg",
+        "dest": "media/tournaments/chill-dill/51-DSC06611.jpg",
+        "size_bytes": 513363,
+        "dsc": 6611,
+        "reason": "Late-event transition — DSC+150 from 6461, new scene"
+      },
+      {
+        "src": "tournaments/Chill N' Dill/Chill N' Dill Photos/32-DSC06641.jpg",
+        "dest": "media/tournaments/chill-dill/32-DSC06641.jpg",
+        "size_bytes": 520618,
+        "dsc": 6641,
+        "reason": "Pre-closing / awards area — DSC+30 from 6611"
+      },
+      {
+        "src": "tournaments/Chill N' Dill/Chill N' Dill Photos/23-DSC06653.jpg",
+        "dest": "media/tournaments/chill-dill/23-DSC06653.jpg",
+        "size_bytes": 564148,
+        "dsc": 6653,
+        "reason": "Closing ceremony — DSC+12 from 6641"
+      },
+      {
+        "src": "tournaments/Chill N' Dill/Chill N' Dill Photos/1-DSC06667.jpg",
+        "dest": "media/tournaments/chill-dill/1-DSC06667.jpg",
+        "size_bytes": 578258,
+        "dsc": 6667,
+        "reason": "Final celebration — highest quality in closing burst (578KB), DSC+14 from 6653"
+      }
+    ],
+    "rally-royale": [
+      {
+        "src": "tournaments/Rally Royale/Rally Royale Pictures/IMG_4641.JPG",
+        "dest": "media/tournaments/rally-royale/IMG_4641.JPG",
+        "size_bytes": 1555651,
+        "reason": "Action — largest JPG in collection (1.55MB)"
+      },
+      {
+        "src": "tournaments/Rally Royale/Rally Royale Pictures/IMG_4631.JPG",
+        "dest": "media/tournaments/rally-royale/IMG_4631.JPG",
+        "size_bytes": 1533458,
+        "reason": "Action — 2nd largest (1.53MB)"
+      },
+      {
+        "src": "tournaments/Rally Royale/Rally Royale Pictures/IMG_4632.JPG",
+        "dest": "media/tournaments/rally-royale/IMG_4632.JPG",
+        "size_bytes": 1512003,
+        "reason": "Action — 1.51MB"
+      },
+      {
+        "src": "tournaments/Rally Royale/Rally Royale Pictures/IMG_4637.JPG",
+        "dest": "media/tournaments/rally-royale/IMG_4637.JPG",
+        "size_bytes": 1476679,
+        "reason": "Action — 1.47MB"
+      },
+      {
+        "src": "tournaments/Rally Royale/Rally Royale Pictures/IMG_4720.JPG",
+        "dest": "media/tournaments/rally-royale/IMG_4720.JPG",
+        "size_bytes": 1279643,
+        "reason": "Action/venue panoramic — 1.28MB"
+      },
+      {
+        "src": "tournaments/Rally Royale/Rally Royale Pictures/IMG_4670.JPG",
+        "dest": "media/tournaments/rally-royale/IMG_4670.JPG",
+        "size_bytes": 989659,
+        "reason": "Match action — 989KB"
+      },
+      {
+        "src": "tournaments/Rally Royale/Rally Royale Pictures/IMG_4669.JPG",
+        "dest": "media/tournaments/rally-royale/IMG_4669.JPG",
+        "size_bytes": 966974,
+        "reason": "Match action — 967KB"
+      },
+      {
+        "src": "tournaments/Rally Royale/Rally Royale Pictures/IMG_4705.JPG",
+        "dest": "media/tournaments/rally-royale/IMG_4705.JPG",
+        "size_bytes": 959714,
+        "reason": "Match action — 960KB"
+      },
+      {
+        "src": "tournaments/Rally Royale/Rally Royale Pictures/IMG_4707.JPG",
+        "dest": "media/tournaments/rally-royale/IMG_4707.JPG",
+        "size_bytes": 958666,
+        "reason": "Match action — 959KB"
+      },
+      {
+        "src": "tournaments/Rally Royale/Rally Royale Pictures/IMG_4706.JPG",
+        "dest": "media/tournaments/rally-royale/IMG_4706.JPG",
+        "size_bytes": 956032,
+        "reason": "Match action — 956KB"
+      },
+      {
+        "src": "tournaments/Rally Royale/Rally Royale Pictures/IMG_4701.JPG",
+        "dest": "media/tournaments/rally-royale/IMG_4701.JPG",
+        "size_bytes": 934402,
+        "reason": "Match action — 934KB"
+      },
+      {
+        "src": "tournaments/Rally Royale/Rally Royale Pictures/groupPhoto-ClosingCeremony.jpg",
+        "dest": "media/tournaments/rally-royale/groupPhoto-ClosingCeremony.jpg",
+        "size_bytes": 433833,
+        "reason": "Community/awards — full group at closing ceremony"
+      },
+      {
+        "src": "tournaments/Rally Royale/Videos1/ClosingCeremony.mp4",
+        "dest": "media/tournaments/rally-royale/ClosingCeremony.mp4",
+        "size_bytes": 2220880,
+        "reason": "Highlight video — MP4 format, web-compatible. Used as featured video on homepage."
+      }
+    ]
+  },
+
+  "reject": {
+    "chill-dill": {
+      "_count": 481,
+      "_reason": "All Chill N' Dill photos NOT listed in keep.chill-dill above",
+      "_examples_of_why": [
+        "DSC6136-6142, 6144-6145, 6139-6141, 6150-6152, 6157, 6160, 6164-6165: burst duplicates of selected 6143/6163",
+        "DSC6667-6675 burst (files 2,3,4,5,6,7,8,9): burst duplicates of selected 1-DSC06667",
+        "DSC6646-6654 burst (files 21,24,25,26): burst duplicates of selected 23-DSC06653",
+        "Files 468-497 (DSC6059-6088): lowest quality range, <300KB average file size",
+        "All files not listed in keep.chill-dill regardless of size"
+      ]
+    },
+    "rally-royale-heic": {
+      "_count": 19,
+      "_reason": "HEIC format — not natively supported by browsers without server-side conversion",
+      "_files": [
+        "tournaments/Rally Royale/Rally Royale Pictures/IMG_4620.HEIC",
+        "tournaments/Rally Royale/Rally Royale Pictures/IMG_4623.HEIC",
+        "tournaments/Rally Royale/Rally Royale Pictures/IMG_4624.HEIC",
+        "tournaments/Rally Royale/Rally Royale Pictures/IMG_4628.HEIC",
+        "tournaments/Rally Royale/Rally Royale Pictures/IMG_4650.HEIC",
+        "tournaments/Rally Royale/Rally Royale Pictures/IMG_4651.HEIC",
+        "tournaments/Rally Royale/Rally Royale Pictures/IMG_4652.HEIC",
+        "tournaments/Rally Royale/Rally Royale Pictures/IMG_4653.HEIC",
+        "tournaments/Rally Royale/Rally Royale Pictures/IMG_4659.HEIC",
+        "tournaments/Rally Royale/Rally Royale Pictures/IMG_4660.HEIC",
+        "tournaments/Rally Royale/Rally Royale Pictures/IMG_4661.HEIC",
+        "tournaments/Rally Royale/Rally Royale Pictures/IMG_4662.HEIC",
+        "tournaments/Rally Royale/Rally Royale Pictures/IMG_4663.HEIC",
+        "tournaments/Rally Royale/Rally Royale Pictures/IMG_4664.HEIC",
+        "tournaments/Rally Royale/Rally Royale Pictures/IMG_4672.HEIC",
+        "tournaments/Rally Royale/Rally Royale Pictures/IMG_4675.HEIC",
+        "tournaments/Rally Royale/Rally Royale Pictures/IMG_4676.HEIC",
+        "tournaments/Rally Royale/Rally Royale Pictures/IMG_4677.HEIC",
+        "tournaments/Rally Royale/Rally Royale Pictures/IMG_4725.HEIC"
+      ]
+    },
+    "rally-royale-small-jpg": {
+      "_count": 3,
+      "_reason": "Low quality or irrelevant",
+      "_files": [
+        {
+          "file": "tournaments/Rally Royale/Rally Royale Pictures/IMG_4709.JPG",
+          "size_bytes": 230869,
+          "reason": "230KB — likely blurred or poorly framed relative to kept selections"
+        },
+        {
+          "file": "tournaments/Rally Royale/Rally Royale Pictures/IMG_4714.JPG",
+          "size_bytes": 196608,
+          "reason": "196KB — lowest quality JPG"
+        },
+        {
+          "file": "tournaments/Rally Royale/Rally Royale Pictures/ChipotleOrder.jpg",
+          "size_bytes": 210626,
+          "reason": "Chipotle catering order receipt — not a tournament photo"
+        }
+      ]
+    },
+    "rally-royale-video-raw": {
+      "_count": 42,
+      "_reason": "Raw unedited video clips — too large for web use (1MB–10GB each). Only ClosingCeremony.mp4 is kept.",
+      "_files": [
+        "tournaments/Rally Royale/lastGames-002.mov (9.7GB — unusable for web)",
+        "tournaments/Rally Royale/Videos1/IMG_4723.MOV (494MB)",
+        "tournaments/Rally Royale/Videos2/IMG_4695.MOV (489MB)",
+        "tournaments/Rally Royale/Videos1/IMG_4717.MOV (477MB)",
+        "tournaments/Rally Royale/Videos1/vid#.mp4 (problematic filename — # is URL fragment delimiter)",
+        "... and all other .MOV files in Videos1/ and Videos2/"
+      ]
+    }
+  },
+
+  "totals": {
+    "source_files": 573,
+    "keep": 29,
+    "reject": 544,
+    "keep_breakdown": {
+      "chill_dill_photos": 16,
+      "rally_royale_photos": 12,
+      "rally_royale_video": 1
+    }
+  }
+}

@@ -42,32 +42,44 @@ export default function DonationForm() {
 
   return (
     <div className="rounded-lg border border-gray-200 p-6 dark:border-gray-800">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {SUGGESTED_AMOUNTS.map((amount) => (
-          <button
-            key={amount}
-            type="button"
-            onClick={() => {
-              setSelected(amount);
-              setCustomAmount('');
-            }}
-            className={`rounded-md border px-4 py-3 text-center font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500/40 ${
-              selected === amount && !customAmount
-                ? 'border-brand-600 bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-400'
-                : 'border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800'
-            }`}
-          >
-            ${amount}
-          </button>
-        ))}
-      </div>
+      {/* Suggested amounts — aria-pressed communicates selected state to screen readers */}
+      <fieldset>
+        <legend className="mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+          Select an amount
+        </legend>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {SUGGESTED_AMOUNTS.map((amount) => {
+            const isActive = selected === amount && !customAmount;
+            return (
+              <button
+                key={amount}
+                type="button"
+                aria-pressed={isActive}
+                aria-label={`Donate $${amount}`}
+                onClick={() => {
+                  setSelected(amount);
+                  setCustomAmount('');
+                }}
+                className={`rounded-md border px-4 py-3 text-center font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500/40 ${
+                  isActive
+                    ? 'border-brand-600 bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-400'
+                    : 'border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800'
+                }`}
+              >
+                ${amount}
+              </button>
+            );
+          })}
+        </div>
+      </fieldset>
 
       <div className="mt-4">
         <label htmlFor="customAmount" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
           Or enter a custom amount
         </label>
         <div className="relative mt-1">
-          <span className="absolute inset-y-0 left-3 flex items-center text-gray-400 dark:text-gray-500">$</span>
+          {/* aria-hidden: the "$" is decorative; aria-label on the input describes the full context */}
+          <span className="absolute inset-y-0 left-3 flex items-center text-gray-400 dark:text-gray-500" aria-hidden="true">$</span>
           <input
             id="customAmount"
             type="number"
@@ -78,7 +90,8 @@ export default function DonationForm() {
               setCustomAmount(e.target.value);
               setSelected(null);
             }}
-            placeholder="Custom amount"
+            placeholder="Other amount"
+            aria-label="Custom donation amount in dollars"
             className="w-full rounded-md border border-gray-300 bg-white py-2 pl-7 pr-3 text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/40 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
           />
         </div>
@@ -98,7 +111,7 @@ export default function DonationForm() {
         type="button"
         onClick={onSubmit}
         disabled={submitting}
-        className="mt-6 w-full rounded-md bg-brand-600 px-4 py-2.5 font-medium text-white transition-colors hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500/40 disabled:opacity-50"
+        className="mt-6 w-full rounded-md bg-brand-600 px-4 py-2.5 font-medium text-white transition-all hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500/40 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {submitting ? 'Redirecting…' : `Donate${amountDollars ? ` $${amountDollars}` : ''}`}
       </button>

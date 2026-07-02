@@ -48,11 +48,14 @@ export default async function DashboardPage() {
     <main className="mx-auto max-w-3xl space-y-10 px-4 py-8">
       <h1 className="text-2xl font-bold text-brand-700 dark:text-brand-400">Dashboard</h1>
 
-      <section className="grid grid-cols-3 gap-4">
-        {stats.map(({ icon: Icon, label, value }) => (
+      {/* 2-col on mobile (3rd card spans full width to avoid orphaned column), 3-col on sm+ */}
+      <section className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+        {stats.map(({ icon: Icon, label, value }, i) => (
           <div
             key={label}
-            className="rounded-lg border border-gray-200 p-4 text-center dark:border-gray-800"
+            className={`rounded-lg border border-gray-200 p-4 text-center dark:border-gray-800 ${
+              i === stats.length - 1 && stats.length % 2 !== 0 ? 'col-span-2 sm:col-span-1' : ''
+            }`}
           >
             <Icon className="mx-auto h-5 w-5 text-brand-600 dark:text-brand-400" aria-hidden="true" />
             <p className="mt-2 text-2xl font-bold text-gray-900 dark:text-gray-100">{value}</p>
@@ -86,7 +89,8 @@ export default async function DashboardPage() {
           <EmptyState
             icon={Users}
             title="You haven't joined any tournaments yet"
-            description="Browse tournaments to find one to register for."
+            description="Browse open tournaments to find one to register for."
+            action={{ label: 'Browse Tournaments', href: '/events?tab=current' }}
           />
         ) : (
           <div className="space-y-2">
@@ -96,11 +100,11 @@ export default async function DashboardPage() {
                 href={`/tournaments/${team.tournament.slug}`}
                 className="flex items-center justify-between rounded-lg border border-gray-200 p-3 transition-colors hover:border-brand-200 hover:bg-brand-50/30 dark:border-gray-800 dark:hover:border-brand-800 dark:hover:bg-brand-900/10"
               >
-                <div>
-                  <p className="font-medium text-gray-900 dark:text-gray-100">{team.tournament.name}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Team: {team.name}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium text-gray-900 dark:text-gray-100">{team.tournament.name}</p>
+                  <p className="truncate text-sm text-gray-500 dark:text-gray-400">Team: {team.name}</p>
                 </div>
-                <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700 dark:bg-brand-900/30 dark:text-brand-400">
+                <span className="ml-2 shrink-0 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700 dark:bg-brand-900/30 dark:text-brand-400">
                   {team.status}
                 </span>
               </Link>

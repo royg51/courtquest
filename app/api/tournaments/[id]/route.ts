@@ -6,12 +6,24 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth, requireRole } from '@/lib/auth';
 import { getTournamentById, updateTournament, deleteTournament } from '@/lib/tournaments';
 import { updateTournamentSchema } from '@/lib/schemas/tournament';
+import { recordAudit, diffChangedFields } from '@/lib/audit';
 
 export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
   const tournament = await getTournamentById(params.id);
   if (!tournament) {
     return NextResponse.json({ error: 'Not found', code: 'NOT_FOUND' }, { status: 404 });
   }
+
+  // Private tournaments are not exposed to unauthenticated or unauthorized callers.
+  if (!tournament.isPublic) {
+    const session = await auth();
+    const canView =
+      session?.user?.id === tournament.organizerId || session?.user?.role === 'ADMIN';
+    if (!canView) {
+      return NextResponse.json({ error: 'Not found', code: 'NOT_FOUND' }, { status: 404 });
+    }
+  }
+
   return NextResponse.json({ tournament });
 }
 
@@ -47,6 +59,21 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 
   const tournament = await updateTournament(params.id, parsed.data);
+
+  const { before, after } = diffChangedFields(
+    existing as unknown as Record<string, unknown>,
+    parsed.data as Record<string, unknown>
+  );
+  await recordAudit({
+    actor: { id: session.user.id, email: session.user.email ?? null },
+    action: 'TOURNAMENT_UPDATED',
+    entityType: 'TOURNAMENT',
+    entityId: params.id,
+    before,
+    after,
+    metadata: { slug: existing.slug },
+  });
+
   return NextResponse.json({ tournament });
 }
 
@@ -62,5 +89,16 @@ export async function DELETE(_request: NextRequest, { params }: { params: { id: 
   }
 
   await deleteTournament(params.id);
+
+  await recordAudit({
+    // requireRole(session, 'ADMIN') above returned true, so session is non-null.
+    actor: { id: session!.user.id, email: session!.user.email ?? null },
+    action: 'TOURNAMENT_DELETED',
+    entityType: 'TOURNAMENT',
+    entityId: params.id,
+    before: { name: existing.name, slug: existing.slug, status: existing.status },
+    after: null,
+  });
+
   return NextResponse.json({ success: true });
 }
